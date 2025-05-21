@@ -60,3 +60,22 @@ The basic idea is to figure out how to update the TxE so that it has some shared
 Now how is that used to make a prediction?
 
 I think we just stick a big linear layer that just gives us B,T,V from B,T,E; I can see the whole thing now - time to code.
+
+[2025-05-21 17:44:27]
+
+Alright. Transformer version with custom tokenization complete.
+
+I do see the whole thing and it makes we swoon!
+
+Input text -> Tokens -> embeddings -> contextual embeddings -> probabilities
+
+The "activators" here are
+- UTF-8 encoding
+- token dict
+- embedding table
+- attention block
+- linear layer
+
+a trained model means we need everything in the "activators" section.
+
+One thing is, I still don't "see" the training metrics, I am not saving the learned weights and I am not doing any hyper parameter tuning. Those are some improvements I need to make in an updated code to make it all work.
