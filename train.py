@@ -45,7 +45,7 @@ train_data_iter = cycle(train_data)
 val_data_iter = cycle(val_data)
 # %% Initialize model 
 model = GPT(config.vocab_size, config.n_embd, config.n_head, config.block_size, config.dropout)
-m = model.to(device)
+model = model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
 min_loss = float("inf")
 save_state = True
@@ -82,7 +82,8 @@ def load_state(model, optimizer, model_dir='models'):
 #%%
 for iter in range(config.max_iters):
     # sample a batch of data
-    xb,yb = next(train_data_iter)
+    xb, yb = next(train_data_iter)
+    xb, yb = xb.to(device), yb.to(device)
     logits, loss = model(xb, yb)
     # backprop
     optimizer.zero_grad(set_to_none=True)

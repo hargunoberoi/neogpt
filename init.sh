@@ -5,6 +5,9 @@ set -e  # Exit on any error
 
 echo "Starting GPT project initialization..."
 
+# get the harbpe library from github
+git clone https://github.com/hargunoberoi/harbpe
+
 # Install dependencies
 echo "Installing dependencies from requirements.txt..."
 pip install -r requirements.txt
@@ -13,6 +16,7 @@ pip install -r requirements.txt
 if [ ! -d "models" ]; then
     echo "Models folder not found. Creating and running tokenizer training..."
     mkdir -p models
+fi
     
 # Check if tokenizer.model exists
 if [ ! -f "models/tokenizer.model" ]; then
@@ -29,7 +33,6 @@ if [ ! -f "models/tokenizer.model" ]; then
 else
     echo "tokenizer.model already exists, skipping tokenizer training"
 fi
-
 
 # Run main training
 echo "Starting main model training..."
