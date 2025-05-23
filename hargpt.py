@@ -1,11 +1,14 @@
-
 #%%
 from harbpe import RegexTokenizer
+from utils import ModelConfig
 import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from model import GPT
+
+# Load configuration
+config = ModelConfig.from_yaml("model_config.yaml")
 
 with open("input.txt", "r") as f:
     text = f.read()
@@ -19,9 +22,9 @@ else:
 # %% 
 def get_batch(split):
     data = train_data if split == 'train' else val_data
-    ix = torch.randint(len(data) - block_size, (batch_size,))
-    x = torch.stack([data[i:i+block_size] for i in ix])
-    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
+    ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
+    x = torch.stack([data[i:i+config.block_size] for i in ix])
+    y = torch.stack([data[i+1:i+config.block_size+1] for i in ix])
     x,y = x.to(device), y.to(device)
     return x,y
 
@@ -30,8 +33,8 @@ def estimate_loss():
     out = {}
     model.eval()
     for split in ['train', 'val']:
-        losses = torch.zeros(eval_iters)
-        for k in range(eval_iters):
+        losses = torch.zeros(config.eval_iters)
+        for k in range(config.eval_iters):
             X, Y = get_batch(split)
             logits, loss = model(X, Y)
             losses[k] = loss.item()
@@ -46,27 +49,16 @@ n = int(len(text_tokens) * 0.9)
 text_tokens = torch.tensor(text_tokens, dtype=torch.long, device=device)
 train_data = text_tokens[:n]
 val_data = text_tokens[n:]
+vocab_size = len(hartokenizer.vocab)
 
-   
-T = block_size = 8
-B = batch_size = 32
-V = vocab_size = len(hartokenizer.vocab)
-E = n_embd = 64
-max_iters = 3000
-#eval_interval = 500
-learning_rate = 3e-4
-eval_iters = 100
-n_head = 6
-n_layer = 6
-dropout = 0.2
 #%%
-model = GPT(vocab_size, n_embd, n_head, block_size, dropout)
+model = GPT(vocab_size, config.n_embd, config.n_head, config.block_size, config.dropout)
 m = model.to(device)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
 #%%
-for iter in range(max_iters):
-    if iter % eval_iters == 0 or iter == max_iters - 1:
+for iter in range(config.max_iters):
+    if iter % config.eval_iters == 0 or iter == config.max_iters - 1:
         losses = estimate_loss()
         train_loss = losses['train'].item()
         val_loss = losses['val'].item()
@@ -89,12 +81,12 @@ prompt_tokens = hartokenizer.encode(prompt)
 # convert to torch 
 prompt_tensor = torch.tensor(prompt_tokens, dtype=torch.long, device=device).unsqueeze(0)
 # generate from model
-max_new_tokens = 200
+max_new_tokens = config.max_new_tokens
 
 
 # %%
 # print output
-output = model.generate(prompt_tensor, max_new_tokens)
+output = model.generate(prompt_tensor, config.max_new_tokens)
 output_list = output[0].tolist()
 output_text = hartokenizer.decode(output_list)
 

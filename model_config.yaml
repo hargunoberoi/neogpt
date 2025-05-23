@@ -1,0 +1,18 @@
+# Model Configuration
+model:
+  block_size: 8
+  batch_size: 32
+  n_embd: 64
+  n_head: 6
+  n_layer: 6
+  dropout: 0.2
+
+# Training Configuration
+training:
+  max_iters: 3000
+  learning_rate: 0.0003 # yaml treats 3e-4 as a string
+  eval_iters: 100
+
+# Generation Configuration
+generation:
+  max_new_tokens: 200
