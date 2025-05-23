@@ -14,18 +14,22 @@ if [ ! -d "models" ]; then
     echo "Models folder not found. Creating and running tokenizer training..."
     mkdir -p models
     
-    echo "Running tokenizer training..."
+# Check if tokenizer.model exists
+if [ ! -f "models/tokenizer.model" ]; then
+    echo "tokenizer.model not found. Running tokenizer training..."
     python train_tokenizer.py
-    
+
     # Verify tokenizer training created expected files
     if [ -f "models/tokenizer.model" ] || [ -f "models/tokenizer.vocab" ]; then
         echo "Tokenizer files created successfully"
     else
-        echo "Warning: Expected tokenizer files not found, but training completed without errors"
+        echo "Warning: Expected tokenizer files not found"
+        exit 1
     fi
 else
-    echo "Models folder already exists, skipping tokenizer training"
+    echo "tokenizer.model already exists, skipping tokenizer training"
 fi
+
 
 # Run main training
 echo "Starting main model training..."

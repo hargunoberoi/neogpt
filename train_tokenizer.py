@@ -18,7 +18,7 @@ with open("model_config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
 # get vocab_size from config
-vocab_size = config["vocab_size"]
+vocab_size = config["model"]["vocab_size"]
 
 hartokenizer = RegexTokenizer(max_tokens=vocab_size)
 # check if models/tokenizer.model does not exist,
