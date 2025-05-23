@@ -121,7 +121,6 @@ class GPT(nn.Module):
             logits = logits.view(B*T, C)
             targets = targets.view(B*T)
             loss = F.cross_entropy(logits, targets)
-
         return logits, loss
 
     def generate(self,idx,max_new_tokens):

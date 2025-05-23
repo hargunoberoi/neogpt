@@ -12,8 +12,14 @@ with open("input.txt", "r") as f:
 from harbpe import RegexTokenizer
 import os
 
-#%%
-V = vocab_size = 512
+#%% # load model_config.yaml and get vocab_size 
+import yaml
+with open("model_config.yaml", "r") as f:
+    config = yaml.safe_load(f)
+
+# get vocab_size from config
+vocab_size = config["vocab_size"]
+
 hartokenizer = RegexTokenizer(max_tokens=vocab_size)
 # check if models/tokenizer.model does not exist,
 if os.path.exists("models/tokenizer.model"):
@@ -25,10 +31,10 @@ else:
     hartokenizer.save(prefix)
 
 # %% test tokenizer on small sample
-
-sample = text[:1000]
-enc = hartokenizer.encode(sample)
-dec = hartokenizer.decode(enc)
-print(f"Encoded: {enc}")
-print(f"Decoded: {dec}")
+# Todo: Write pytest test cases to check if this works
+# sample = text[:1000]
+# enc = hartokenizer.encode(sample)
+# dec = hartokenizer.decode(enc)
+# print(f"Encoded: {enc}")
+# print(f"Decoded: {dec}")
 # %%

@@ -79,3 +79,31 @@ The "activators" here are
 a trained model means we need everything in the "activators" section.
 
 One thing is, I still don't "see" the training metrics, I am not saving the learned weights and I am not doing any hyper parameter tuning. Those are some improvements I need to make in an updated code to make it all work.
+
+[2025-05-23 10:28:23]
+
+I need to modify the codebase now to gear it up for better tracking and training.
+
+First, I need wandb.
+
+[2025-05-23 15:24:07]
+
+I was wrong in thinking I needed wandb first.
+
+I am a little paralyzed by how I have to set up the class methods but I am making a little progress.
+
+Currently stuck at how I can get the metrics.
+
+The old function by Andrej took a batch based on his batches function which I have replaced by dataloader.
+
+Now, I need a good way to save and load model
+
+[2025-05-23 16:44:33]
+
+Alright. model loading done, model track stats done. Dataset, dataloader done. Now I just need a shell script that basically does things if models (tokenizer and actual trained language model don't exist). It should be pulling harbpe too because that is required to train tokenizer.
+
+
+TooDoo
+
+- make proper harbpe repository ✅
+- create shell script to run tokenizer and model
