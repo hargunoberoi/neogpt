@@ -1,5 +1,6 @@
 harbpe/
 harbpe_follow/
 models/
+wandb/
 # pycache
 __pycache__/

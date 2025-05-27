@@ -1,4 +1,4 @@
-#%%
+#%% imports
 from harbpe import RegexTokenizer
 from utils import ModelConfig
 from data import TextDataset
@@ -9,11 +9,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from model import GPT
 from itertools import cycle
-from eval_metrics import estimate_loss
+from utils import save_state, load_state, estimate_loss
+import wandb
 
+ #%% set up device, config and tokenizer, wandb
 # set the device early on
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+model_dir = "models"
 # Load configuration
 config = ModelConfig.from_yaml("model_config.yaml")
 
@@ -24,6 +26,17 @@ else:
     # assertion error: model needs to be trained
     raise AssertionError("Model needs to be trained")
 
+# generate hexadecimal code for id
+
+id = '4722794' + wandb.util.generate_id()
+
+run = wandb.init(
+    project="neogpt",
+    config=config.__dict__,
+    name="colab-training",
+    id = id,
+)
+#%% set train and validation data loaders
 # input data and tokenize 
 with open("input.txt", "r") as f:
     raw_text = f.read()
@@ -51,35 +64,21 @@ min_loss = float("inf")
 save_state = True
 load_model = False
 
+#%%generate from model
+def generate_from_model(prompt, model, tokenizer, config, device):
+    print(f"Prompt: {prompt}")
+    prompt_tokens = tokenizer.encode(prompt)
+    prompt_tensor = torch.tensor(prompt_tokens, dtype=torch.long, device=device).unsqueeze(0)
+    output = model.generate(prompt_tensor, config.max_new_tokens)
+    output_list = output[0].tolist()
+    output_text = tokenizer.decode(output_list)
+    print(f"Completion: {output_text}")
+    return output_text
 
-# save location
-model_dir = "models"
-if not os.path.exists(model_dir):
-    os.makedirs(model_dir)
-# save updated model weights
-def save_state(model, optimizer, iter, model_dir):
-    """
-    Save the model and optimizer state.
-    """
-    save_path = os.path.join(model_dir, "model.pth")
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-        'iter': iter
-    }, save_path)
-    print(f"Model saved to {save_path}")
+# Example usage:
+# generate_from_model("First Citizen:", model, hartokenizer, config, device)
 
-def load_state(model, optimizer, model_dir='models'):
-    """
-    Load the model and optimizer state.
-    """
-    # get the latest model
-    model_file = model_dir + "/model.pth"
-    checkpoint = torch.load(model_file)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    print(f"Model loaded from {model_file}")
-#%%
+#%% Train model
 for iter in range(config.max_iters):
     # sample a batch of data
     xb, yb = next(train_data_iter)
@@ -101,20 +100,6 @@ for iter in range(config.max_iters):
             min_loss = val_loss
             save_state(model, optimizer, iter, model_dir)
         
-#%%
-# generate from model
-prompt = "First Citizen:"
-print(f"Prompt: {prompt}")
-prompt_tokens = hartokenizer.encode(prompt)
-# convert to torch 
-prompt_tensor = torch.tensor(prompt_tokens, dtype=torch.long, device=device).unsqueeze(0)
-# generate from model
-max_new_tokens = config.max_new_tokens
-# %%
-# print output
-output = model.generate(prompt_tensor, config.max_new_tokens)
-output_list = output[0].tolist()
-output_text = hartokenizer.decode(output_list)
-print(f"Completion: {output_text}")
+
 
 # %%

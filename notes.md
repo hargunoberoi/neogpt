@@ -106,4 +106,44 @@ Alright. model loading done, model track stats done. Dataset, dataloader done. N
 TooDoo
 
 - make proper harbpe repository ✅
-- create shell script to run tokenizer and model
+- create shell script to run tokenizer and model ✅
+
+
+[2025-05-27 18:02:46]
+
+I spent the last couple of days trying to figure out how wandb works.
+
+Now I want to wandbfy my code so that I can
+
+1. Log metrics (not so interesting)
+2. Save model weights (very interesting)
+3. Set up continuous free training workflow (Cool!)
+
+1 and 2 are must, which I want to tackle right now. 
+
+Basic idea is that I should be able to store my weights somewhere, my code somewhere and be able to run it anywhere. 
+
+The reason I am so motivated to do this is that Surojit and I spent roughly $2-3k in AWS gpu instances, although the whole process was slightly frustrating and at the end of it, we got some stupid T4 gpus which are available for free on google colab. Colab is also better to spin up, but the limitation is obviously
+
+1. Where do you store your data (still unknown)
+2. Where do you store your model weights (wandb!)
+3. Shutdown of instances (to be tackled later)
+
+So far now, I am trying to get it at least working with saved model and some basic tracking.
+
+[2025-05-27 19:20:25]
+
+Calling it a day today. I have successfully saved the tokenizer model in the artifacts.
+
+Now I need to think how can I operationalize it simply. i.e without thinking about restarting it.
+
+This would involve basic tracking and saving the model weights, but it would require some thinking.
+
+I leave it to tommorrow
+
+- Pass API key to google colab
+- Save metrics
+- Save model weights
+- Run inference by calling model weights in a fresh colab
+
+

@@ -4,7 +4,8 @@ Utility classes and functions for model configuration.
 from dataclasses import dataclass
 from typing import Dict, Any
 import yaml
-
+import torch
+import os
 
 @dataclass
 class ModelConfig:
@@ -48,3 +49,41 @@ class ModelConfig:
         """String representation of the configuration."""
         attrs = [f"{k}={v}" for k, v in self.__dict__.items()]
         return f"ModelConfig({', '.join(attrs)})" 
+
+# save model state
+def save_state(model, optimizer, iter, model_dir):
+    """
+    Save the model and optimizer state.
+    """
+    save_path = os.path.join(model_dir, "model.pth")
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'iter': iter
+    }, save_path)
+    print(f"Model saved to {save_path}")
+
+def load_state(model, optimizer, model_dir='models'):
+    """
+    Load the model and optimizer state.
+    """
+    # get the latest model
+    model_file = model_dir + "/model.pth"
+    checkpoint = torch.load(model_file)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    print(f"Model loaded from {model_file}")
+
+
+def estimate_loss(model, iterator, num_iters=10, device='cpu'):
+    model.eval()
+    losses = torch.zeros(num_iters)
+    for k in range(num_iters):
+        xb, yb = next(iterator)
+        # move to device
+        xb,yb = xb.to(device), yb.to(device)
+        logits, loss = model(xb, yb)
+        losses[k] = loss.item()
+    model.train()
+    return losses.mean()
+
