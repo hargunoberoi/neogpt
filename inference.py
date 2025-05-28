@@ -25,7 +25,7 @@ else:
 model = GPT(config.vocab_size, config.n_embd, config.n_head, config.block_size, config.dropout)
 model_path = "models/model.pth"
 if os.path.exists(model_path):
-    checkpoint = torch.load(model_path, map_location=device)
+    checkpoint = torch.load(model_path, map_location=device, weights_only=True)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.to(device)
     model.eval()

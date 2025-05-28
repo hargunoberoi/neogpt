@@ -146,4 +146,24 @@ I leave it to tommorrow
 - Save model weights
 - Run inference by calling model weights in a fresh colab
 
+[2025-05-28 14:01:47]
 
+Alright! Here we are.
+
+Our model brain is at wandb ;
+Model training happens on colab ; 
+Code resides on github
+
+This is legen... (wait for it) dary! 
+
+A few things that I observed;
+
+- Fix generations to be a table for better viewing
+- The colab training ended very quickly (inactivity?)
+- How do I resume a crashed run?
+
+What should I tackle first?
+
+I tackled the colab inactivity problem. Apparently the solution I have is the only one so I hope that works.
+
+I'll start a fresh run and see how it holds up.

@@ -17,7 +17,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model_dir = "models"
 # Load configuration
 config = ModelConfig.from_yaml("model_config.yaml")
-
+#%%
 hartokenizer = RegexTokenizer()
 if os.path.exists("models/tokenizer.model"):
     hartokenizer.load("models/tokenizer.model")
@@ -74,10 +74,13 @@ def generate_from_model(prompt, model, tokenizer, config, device):
     print(f"Completion: {output_text}")
     return output_text
 
-sample_prompt = "Thou shall not"
-out = generate_from_model(sample_prompt, model, hartokenizer, config, device)
-print("Initial Generation before training")
-print(f"Sample output: {out}")
+sample_prompts = [
+    "Thou shall not",
+    "In the beginning",
+    "To be or not to be",
+]
+
+generation_table = wandb.Table(columns = ["iter"] + sample_prompts)
 #%% Train model
 for iter in range(config.max_iters):
     # sample a batch of data
@@ -88,30 +91,28 @@ for iter in range(config.max_iters):
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
     optimizer.step()
-
+    print(f"step {iter}: loss {loss.item():.4f}")
     # do this ocassionally to save the model state
     if iter % config.eval_interval == 0 or iter == config.max_iters - 1:
         train_loss = estimate_loss(model, train_data_iter, config.eval_iters, device=device)
         val_loss = estimate_loss(model, val_data_iter, config.eval_iters, device=device)
-        out = generate_from_model(sample_prompt, model, hartokenizer, config, device)
+        # randomly select a sample prompt
+        outs = [generate_from_model(prompt, model, hartokenizer, config, device) for prompt in sample_prompts]
+        # log to generation table
+        generation_table.add_data(iter, *outs)
         print(f"step {iter}: train loss {train_loss:.4f}, val loss {val_loss:.4f}")
-        # make a clean line to separate outputs
-        print("-" * 50)
-        # print output
-        print(f"Sample output: {out}")
-        print("-" * 50)
         metric_dict = {
-            "train_loss": train_loss.mean().item(),
-            "val_loss": val_loss.mean().item(),
+            "train_loss": train_loss.item(),
+            "val_loss": val_loss.item(),
             "iter": iter,
-            "sample_output": out,
+            "generations": generation_table,
         }
         run.log(metric_dict)
-        if (((min_loss - val_loss) / min_loss) > config.training.update_threshold) and save_model:
+        if (((min_loss - val_loss) / min_loss) > config.update_threshold) and save_model:
             min_loss = val_loss
-            save_state(model, optimizer, iter, model_dir)
+            save_state(model, optimizer, model_dir)
             # save model weights as latest
-            model_artifact = wandb.Artifact("model",type="model")
+            model_artifact = wandb.Artifact("model_2",type="model")
             model_artifact.add_file(os.path.join(model_dir, "model.pth"))
             run.log_artifact(model_artifact,aliases=["latest"])
 
