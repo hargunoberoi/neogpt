@@ -1,4 +1,4 @@
-#%% imports
+#%% import modules/libraries
 from harbpe import RegexTokenizer
 from utils import ModelConfig
 from data import TextDataset
@@ -11,7 +11,6 @@ from model import GPT
 from itertools import cycle
 from utils import save_state, load_state, estimate_loss
 import wandb
-
  #%% set up device, config and tokenizer, wandb
 # set the device early on
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -60,8 +59,8 @@ val_data_iter = cycle(val_data)
 model = GPT(config.vocab_size, config.n_embd, config.n_head, config.block_size, config.dropout)
 model = model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
-min_loss = float("inf")
-save_state = True
+min_loss = 100.0 # setting a very high initial loss
+save_model = True
 load_model = False
 
 #%%generate from model
@@ -75,9 +74,10 @@ def generate_from_model(prompt, model, tokenizer, config, device):
     print(f"Completion: {output_text}")
     return output_text
 
-# Example usage:
-# generate_from_model("First Citizen:", model, hartokenizer, config, device)
-
+sample_prompt = "Thou shall not"
+out = generate_from_model(sample_prompt, model, hartokenizer, config, device)
+print("Initial Generation before training")
+print(f"Sample output: {out}")
 #%% Train model
 for iter in range(config.max_iters):
     # sample a batch of data
@@ -89,17 +89,32 @@ for iter in range(config.max_iters):
     loss.backward()
     optimizer.step()
 
-    # loss metrics - poor estimate because uses only one point
-    # consider a way this can be done for more
-    # do this ocassionally
+    # do this ocassionally to save the model state
     if iter % config.eval_interval == 0 or iter == config.max_iters - 1:
         train_loss = estimate_loss(model, train_data_iter, config.eval_iters, device=device)
         val_loss = estimate_loss(model, val_data_iter, config.eval_iters, device=device)
+        out = generate_from_model(sample_prompt, model, hartokenizer, config, device)
         print(f"step {iter}: train loss {train_loss:.4f}, val loss {val_loss:.4f}")
-        if val_loss < min_loss and save_state:
+        # make a clean line to separate outputs
+        print("-" * 50)
+        # print output
+        print(f"Sample output: {out}")
+        print("-" * 50)
+        metric_dict = {
+            "train_loss": train_loss.mean().item(),
+            "val_loss": val_loss.mean().item(),
+            "iter": iter,
+            "sample_output": out,
+        }
+        run.log(metric_dict)
+        if (((min_loss - val_loss) / min_loss) > config.training.update_threshold) and save_model:
             min_loss = val_loss
             save_state(model, optimizer, iter, model_dir)
-        
+            # save model weights as latest
+            model_artifact = wandb.Artifact("model",type="model")
+            model_artifact.add_file(os.path.join(model_dir, "model.pth"))
+            run.log_artifact(model_artifact,aliases=["latest"])
 
+run.finish()
 
 # %%

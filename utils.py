@@ -51,7 +51,7 @@ class ModelConfig:
         return f"ModelConfig({', '.join(attrs)})" 
 
 # save model state
-def save_state(model, optimizer, iter, model_dir):
+def save_state(model, optimizer, model_dir):
     """
     Save the model and optimizer state.
     """
@@ -59,7 +59,6 @@ def save_state(model, optimizer, iter, model_dir):
     torch.save({
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
-        'iter': iter
     }, save_path)
     print(f"Model saved to {save_path}")
 
@@ -86,4 +85,5 @@ def estimate_loss(model, iterator, num_iters=10, device='cpu'):
         losses[k] = loss.item()
     model.train()
     return losses.mean()
+
 

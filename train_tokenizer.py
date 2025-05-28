@@ -1,19 +1,18 @@
 #%%
 # open file input.txt
-with open("input.txt", "r") as f:
-    text = f.read()
 #%%
 from harbpe import RegexTokenizer
 import os
-from harbpe import RegexTokenizer
 from utils import ModelConfig
-import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from model import GPT
 from utils import save_state, load_state, estimate_loss
 import wandb 
+
+with open("input.txt", "r") as f:
+    text = f.read()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #%% # load model_config.yaml and get vocab_size 
@@ -42,11 +41,23 @@ else:
 
 # %% create tokenizer_artifact for project neogpt
 # first create tokenizer_artifact called tokenizer
+upload_tokenizer = False
+upload_untrained_model = True
 
-wandb.init(project="neogpt")
+if not upload_tokenizer:
+    print("Skipping tokenizer upload")
+else:
+    run = wandb.init(project="neogpt")
+    tokenizer_artifact = wandb.Artifact("tokenizer", type="tokenizer")
+    tokenizer_artifact.add_file("models/tokenizer.model")
+    run.log_artifact(tokenizer_artifact)
+    run.finish()
 
-tokenizer_artifact = wandb.Artifact("tokenizer", type="tokenizer")
-tokenizer_artifact.add_file("models/tokenizer.model")
-wandb.log_tokenizer_artifact(tokenizer_artifact)
-
-
+if not upload_untrained_model:
+    print("Skipping untrained model upload")
+else:
+    run = wandb.init(project="neogpt", reinit=True)
+    model_artifact = wandb.Artifact("model", type="model")
+    model_artifact.add_file("models/model.pth")
+    run.log_artifact(model_artifact)
+    run.finish()

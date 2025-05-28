@@ -2,5 +2,6 @@ harbpe/
 harbpe_follow/
 models/
 wandb/
+scripts/
 # pycache
 __pycache__/

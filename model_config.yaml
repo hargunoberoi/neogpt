@@ -14,6 +14,9 @@ training:
   learning_rate: 0.0003 # yaml treats 3e-4 as a string
   eval_iters: 300
   eval_interval: 100
+  update_threshold: 0.1
 # Generation Configuration
 generation:
   max_new_tokens: 200
+
+
