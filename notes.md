@@ -171,3 +171,38 @@ I'll start a fresh run and see how it holds up.
 I am a little bit zoned out at the moment. Again, the same stuff that happens - lost in code.
 
 I need a colab run attempt, but I'm not sure if everything basically works.
+
+[2025-05-28 16:43:24]
+
+Fixed a small bug in the code wherein I was not using n_layers.
+
+This is the risk of "vibe coding" in neural networks. There are so many settings that it will be very difficult
+to train properly if something is amiss.
+
+Need to test out how long can kaggle work.
+
+[2025-05-28 19:59:20]
+
+Kaggle test succeeded!
+
+Mission KGB (Kaggle Github wandB)
+
+The idea is to use Kaggle for runtime, Github for code and wandB for hosting models.
+
+I need to spam Kaggle though, which means I need a lot of email ids (and also a way to take care of it).
+
+[2025-05-28 21:21:33]
+
+Finally. I can use zoho as a means to create several accounts and then login to kaggle using them.
+
+That means I basically have access to all the gpus under the sun.
+
+I just need to setup my training properly.
+
+What I need to do next is: 
+
+Download ddp related material because I think I am ready for that now.
+
+I could also do the additional exercises like improving the transformer model code, and doing the additional exercises as suggested by Andrej. 
+
+Overall, from resource point of view, I do think I am set, although the dataset could be a catch. But I am betting that Huggingface would solve that problem.
