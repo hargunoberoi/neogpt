@@ -1,9 +1,9 @@
 # Model Configuration
 model:
-  block_size: 128
+  block_size: 64
   batch_size: 256
-  n_embd: 512
-  n_head: 16
+  n_embd: 128
+  n_head: 8
   n_layer: 16
   dropout: 0.2
   vocab_size: 512

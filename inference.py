@@ -22,7 +22,7 @@ else:
     raise AssertionError("Tokenizer needs to be trained")
 
 # Load model
-model = GPT(config.vocab_size, config.n_embd, config.n_head, config.block_size, config.dropout)
+model = GPT(config.vocab_size, config.n_embd, config.n_head, config.n_layer, config.block_size, config.dropout)
 model_path = "models/model.pth"
 if os.path.exists(model_path):
     checkpoint = torch.load(model_path, map_location=device, weights_only=True)

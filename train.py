@@ -56,7 +56,7 @@ val_data = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False)
 train_data_iter = cycle(train_data)
 val_data_iter = cycle(val_data)
 # %% Initialize model 
-model = GPT(config.vocab_size, config.n_embd, config.n_head, config.block_size, config.dropout)
+model = GPT(config.vocab_size, config.n_embd, config.n_head, config.n_layer, config.block_size, config.dropout)
 model = model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
 min_loss = 100.0 # setting a very high initial loss
@@ -112,7 +112,7 @@ for iter in range(config.max_iters):
             min_loss = val_loss
             save_state(model, optimizer, model_dir)
             # save model weights as latest
-            model_artifact = wandb.Artifact("model_2",type="model")
+            model_artifact = wandb.Artifact(f"model_{run.id}", type="model")
             model_artifact.add_file(os.path.join(model_dir, "model.pth"))
             run.log_artifact(model_artifact,aliases=["latest"])
 

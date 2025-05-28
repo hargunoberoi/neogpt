@@ -83,11 +83,11 @@ class Block(nn.Module):
 
 class GPT(nn.Module):
 
-    def __init__(self, vocab_size, n_embd, n_head, block_size, dropout):
+    def __init__(self, vocab_size, n_embd, n_head, n_layer, block_size, dropout):
         super().__init__()
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
         self.position_embedding_table = nn.Embedding(block_size, n_embd)
-        self.blocks = nn.Sequential(*[Block(n_embd, n_head, block_size, dropout) for _ in range(n_head)])
+        self.blocks = nn.Sequential(*[Block(n_embd, n_head, block_size, dropout) for _ in range(n_layer)])
         self.ln_f = nn.LayerNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size)
         # save block size

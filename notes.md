@@ -167,3 +167,7 @@ What should I tackle first?
 I tackled the colab inactivity problem. Apparently the solution I have is the only one so I hope that works.
 
 I'll start a fresh run and see how it holds up.
+
+I am a little bit zoned out at the moment. Again, the same stuff that happens - lost in code.
+
+I need a colab run attempt, but I'm not sure if everything basically works.

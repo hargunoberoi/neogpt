@@ -32,7 +32,7 @@ else:
 if os.path.exists("models/model.pth"):
     print("Model already exists")
 else:
-    model = GPT(config.vocab_size, config.n_embd, config.n_head, config.block_size, config.dropout)
+    model = GPT(config.vocab_size, config.n_embd, config.n_head, config.n_layer, config.block_size, config.dropout)
     model = model.to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
 
