@@ -65,13 +65,11 @@ load_model = False
 
 #%%generate from model
 def generate_from_model(prompt, model, tokenizer, config, device):
-    print(f"Prompt: {prompt}")
     prompt_tokens = tokenizer.encode(prompt)
     prompt_tensor = torch.tensor(prompt_tokens, dtype=torch.long, device=device).unsqueeze(0)
     output = model.generate(prompt_tensor, config.max_new_tokens)
     output_list = output[0].tolist()
     output_text = tokenizer.decode(output_list)
-    print(f"Completion: {output_text}")
     return output_text
 
 sample_prompts = [
@@ -91,7 +89,6 @@ for iter in range(config.max_iters):
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
     optimizer.step()
-    print(f"step {iter}: loss {loss.item():.4f}")
     # do this ocassionally to save the model state
     if iter % config.eval_interval == 0 or iter == config.max_iters - 1:
         train_loss = estimate_loss(model, train_data_iter, config.eval_iters, device=device)
@@ -105,7 +102,7 @@ for iter in range(config.max_iters):
             "train_loss": train_loss.item(),
             "val_loss": val_loss.item(),
             "iter": iter,
-            "generations": generation_table,
+            "generations": wandb.Table(data=generation_table.data, columns=generation_table.columns)
         }
         run.log(metric_dict)
         if (((min_loss - val_loss) / min_loss) > config.update_threshold) and save_model:

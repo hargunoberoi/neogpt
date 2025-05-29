@@ -218,3 +218,12 @@ This means combining the AttentionHead code with Multi-Attention Head.
 [2025-05-29 13:42:54]
 
 Done! Wohoo! This was not as hard as I imagined, and the code is much shorter too! Super pleased!
+
+[2025-05-29 13:58:00]
+
+Exercise 2 somewhat finally makes sense, but I still am not clear how to implement it. 
+
+I am making a strategic decision to not focus on it right now because I want to tackle other parts, especially the third problem which is somewhat related to training GPT-2.
+
+Focusing on that seems to be more useful at the moment, but for a later time, I need to get a little more comfortable with pytorch.
+

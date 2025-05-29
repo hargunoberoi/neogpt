@@ -22,12 +22,12 @@ pip install -r requirements.txt
 if [ ! -d "models" ]; then
     echo "Models folder not found. ..."
     mkdir -p models
-    python download_models.py
+    python download_tokenizer.py
 # else check if tokenizer.model does not exist, if not run download_models.py
 else 
     if [ ! -f "models/tokenizer.model" ]; then
         echo "tokenizer.model not found in models folder. Downloading models."
-        python download_models.py
+        python download_tokenizer.py
     else
         echo "Models already downloaded, skipping download step."
     fi      
