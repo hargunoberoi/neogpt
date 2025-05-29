@@ -48,7 +48,7 @@ run.alert(
 train_dataset = StreamingTextDataset(config.block_size, hartokenizer)
 
 # get the dataloader 
-train_data = DataLoader(train_dataset, batch_size=config.batch_size )
+train_data = DataLoader(train_dataset, batch_size=config.batch_size,shuffle=False)
 train_data_iter = cycle(train_data)
 
 # %% Initialize model 
@@ -57,7 +57,7 @@ model = model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
 min_loss = 100.0 # setting a very high initial loss
 save_model = True
-load_model = False
+# load_model = False - to configure later and allow for restarting training
 
 #%%generate from model
 def generate_from_model(prompt, model, tokenizer, config, device):
@@ -84,26 +84,26 @@ for iter in range(config.max_iters):
     loss.backward()
     optimizer.step()
     # do this ocassionally to save the model state
-    # if iter % config.eval_interval == 0 or iter == config.max_iters - 1:
-    #     train_loss = estimate_loss(model, train_data_iter, config.eval_iters, device=device)
-    #     # randomly select a sample prompt
-    #     outs = [generate_from_model(prompt, model, hartokenizer, config, device) for prompt in sample_prompts]
-    #     # log to generation table
-    #     generation_table.add_data(iter, *outs)
-    #     print(f"step {iter}: train loss {train_loss:.4f}")
-    #     metric_dict = {
-    #         "train_loss": train_loss.item(),
-    #         "iter": iter,
-    #         "generations": wandb.Table(data=generation_table.data, columns=generation_table.columns)
-    #     }
-    #     run.log(metric_dict)
-    #     if (((min_loss - train_loss) / min_loss) > config.update_threshold) and save_model:
-    #         min_loss = train_loss
-    #         save_state(model, optimizer, model_dir)
-    #         # save model weights as latest
-    #         model_artifact = wandb.Artifact(f"model_{run.id}", type="model")
-    #         model_artifact.add_file(os.path.join(model_dir, "model.pth"))
-    #         run.log_artifact(model_artifact,aliases=["latest"])
+    if iter % config.eval_interval == 0 or iter == config.max_iters - 1:
+        train_loss = estimate_loss(model, train_data_iter, config.eval_iters, device=device)
+        # randomly select a sample prompt
+        outs = [generate_from_model(prompt, model, hartokenizer, config, device) for prompt in sample_prompts]
+        # log to generation table
+        generation_table.add_data(iter, *outs)
+        print(f"step {iter}: train loss {train_loss:.4f}")
+        metric_dict = {
+            "train_loss": train_loss.item(),
+            "iter": iter,
+            "generations": wandb.Table(data=generation_table.data, columns=generation_table.columns)
+        }
+        run.log(metric_dict)
+        if (((min_loss - train_loss) / min_loss) > config.update_threshold) and save_model:
+            min_loss = train_loss
+            save_state(model, optimizer, model_dir)
+            # save model weights as latest
+            model_artifact = wandb.Artifact(f"model_{run.id}", type="model")
+            model_artifact.add_file(os.path.join(model_dir, "model.pth"))
+            run.log_artifact(model_artifact,aliases=["latest"])
 
 run.finish()
 
