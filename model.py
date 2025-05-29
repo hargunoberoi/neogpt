@@ -1,54 +1,7 @@
-"""
-Transformer model with the following items: 
-- positional + token embeddings
-- attention blocks
-- linear layer
-"""
-# %% Neural network style implementation
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-class FeedForward(nn.Module):
-
-    def __init__(self, n_embd, dropout):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(n_embd, 4 * n_embd),
-            nn.ReLU(),
-            nn.Linear(4 * n_embd, n_embd),
-            nn.Dropout(dropout)
-        )
-
-    def forward(self, x):
-        return self.net(x)
-    
-
-class Head(nn.Module):
-
-    def __init__(self, n_embd, head_size, block_size, dropout):
-        super().__init__()
-        self.key = nn.Linear(n_embd, head_size, bias=False)
-        self.query = nn.Linear(n_embd, head_size, bias=False)
-        self.value = nn.Linear(n_embd, head_size, bias=False)
-        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self,x):
-
-        B,T,C = x.shape
-        q = self.query(x)
-        k = self.key(x)
-        v = self.value(x)
-
-        uniform_attn = q @ k.transpose(-2,-1) * k.shape[-1]**-0.5
-        uniform_attn = uniform_attn.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
-        softmax_attn = F.softmax(uniform_attn, dim=-1)
-        softmax_attn = self.dropout(softmax_attn)
-        out = softmax_attn @ v
-        return out
-    
+   
 class AttentionHead(nn.Module):
 
     def __init__(self, n_embd, num_heads,block_size,dropout):
@@ -80,43 +33,43 @@ class AttentionHead(nn.Module):
         softmax_attn = self.dropout(softmax_attn)
         out = softmax_attn @ v # B,N,T,H
 
-        # todo: reverse operations
+        # reverse operations
         out = out.transpose(1, 2) 
         out = out.reshape(B, T, -1)
 
         # apply projection and dropout
         out = self.dropout(self.proj(out))
         return out 
-class MultiHeadAttention(nn.Module):
 
-    def __init__(self, n_embd, n_head, block_size, dropout, num_heads, head_size):
+class FeedForward(nn.Module):
+
+    def __init__(self, n_embd, dropout):
         super().__init__()
-        self.heads = nn.ModuleList([Head(n_embd, head_size, block_size, dropout) for _ in range(num_heads)])
-        self.proj = nn.Linear(head_size * n_head, n_embd)
-        self.dropout = nn.Dropout(dropout)
+        self.net = nn.Sequential(
+            nn.Linear(n_embd, 4 * n_embd),
+            nn.ReLU(),
+            nn.Linear(4 * n_embd, n_embd),
+            nn.Dropout(dropout)
+        )
 
     def forward(self, x):
-        out = torch.cat([h(x) for h in self.heads], dim=-1)
-        out = self.dropout(self.proj(out))
-        return out
-
+        return self.net(x)
+    
 class Block(nn.Module):
 
     def __init__(self, n_embd, n_head, block_size, dropout):
         super().__init__()
-        head_size = n_embd // n_head
+
         self.sa = AttentionHead(n_embd, n_head, block_size, dropout )
         self.ffwd = FeedForward(n_embd, dropout)
         self.ln1 = nn.LayerNorm(n_embd)
         self.ln2 = nn.LayerNorm(n_embd)
-
 
     def forward(self, x):
         x = x + self.sa(self.ln1(x))
         x = x + self.ffwd(self.ln2(x))
         return x
     
-
 class GPT(nn.Module):
 
     def __init__(self, vocab_size, n_embd, n_head, n_layer, block_size, dropout):
