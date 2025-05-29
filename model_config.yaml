@@ -10,7 +10,7 @@ model:
 
 # Training Configuration
 training:
-  max_iters: 5000
+  max_iters: 10000
   learning_rate: 0.0003 # yaml treats 3e-4 as a string
   eval_iters: 300
   eval_interval: 100

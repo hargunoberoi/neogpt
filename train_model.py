@@ -1,7 +1,7 @@
 #%% import modules/libraries
 from harbpe import RegexTokenizer
 from utils import ModelConfig
-from data import TextDataset
+from data import TextDataset, StreamingTextDataset
 from torch.utils.data import DataLoader
 import os
 import torch
@@ -32,29 +32,25 @@ id = '4722794' + wandb.util.generate_id()
 run = wandb.init(
     project="neogpt",
     config=config.__dict__,
-    name="colab-training",
+    name="fineweb-training",
     id = id,
+)
+
+# alert that a run has started
+run.alert(
+    title="Run started",
+    text=f"Run {run.name} with id {run.id} has started.",
+    level="INFO"
 )
 #%% set train and validation data loaders
 # input data and tokenize 
-with open("input.txt", "r") as f:
-    raw_text = f.read()
-tokens = hartokenizer.encode(raw_text)
-split_idx = int(0.9 * len(tokens))
 
-train_tokens = tokens[:split_idx]
-val_tokens = tokens[split_idx:]
-
-train_dataset = TextDataset(train_tokens, config.block_size)
-val_dataset = TextDataset(val_tokens, config.block_size)
+train_dataset = StreamingTextDataset(config.block_size, hartokenizer)
 
 # get the dataloader 
-train_data = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
-val_data = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False)
-
-# get infinite iterator using cycle
+train_data = DataLoader(train_dataset, batch_size=config.batch_size )
 train_data_iter = cycle(train_data)
-val_data_iter = cycle(val_data)
+
 # %% Initialize model 
 model = GPT(config.vocab_size, config.n_embd, config.n_head, config.n_layer, config.block_size, config.dropout)
 model = model.to(device)
@@ -73,9 +69,7 @@ def generate_from_model(prompt, model, tokenizer, config, device):
     return output_text
 
 sample_prompts = [
-    "Thou shall not",
-    "In the beginning",
-    "To be or not to be",
+    "Hargun Singh Oberoi is",
 ]
 
 generation_table = wandb.Table(columns = ["iter"] + sample_prompts)
@@ -90,28 +84,26 @@ for iter in range(config.max_iters):
     loss.backward()
     optimizer.step()
     # do this ocassionally to save the model state
-    if iter % config.eval_interval == 0 or iter == config.max_iters - 1:
-        train_loss = estimate_loss(model, train_data_iter, config.eval_iters, device=device)
-        val_loss = estimate_loss(model, val_data_iter, config.eval_iters, device=device)
-        # randomly select a sample prompt
-        outs = [generate_from_model(prompt, model, hartokenizer, config, device) for prompt in sample_prompts]
-        # log to generation table
-        generation_table.add_data(iter, *outs)
-        print(f"step {iter}: train loss {train_loss:.4f}, val loss {val_loss:.4f}")
-        metric_dict = {
-            "train_loss": train_loss.item(),
-            "val_loss": val_loss.item(),
-            "iter": iter,
-            "generations": wandb.Table(data=generation_table.data, columns=generation_table.columns)
-        }
-        run.log(metric_dict)
-        if (((min_loss - val_loss) / min_loss) > config.update_threshold) and save_model:
-            min_loss = val_loss
-            save_state(model, optimizer, model_dir)
-            # save model weights as latest
-            model_artifact = wandb.Artifact(f"model_{run.id}", type="model")
-            model_artifact.add_file(os.path.join(model_dir, "model.pth"))
-            run.log_artifact(model_artifact,aliases=["latest"])
+    # if iter % config.eval_interval == 0 or iter == config.max_iters - 1:
+    #     train_loss = estimate_loss(model, train_data_iter, config.eval_iters, device=device)
+    #     # randomly select a sample prompt
+    #     outs = [generate_from_model(prompt, model, hartokenizer, config, device) for prompt in sample_prompts]
+    #     # log to generation table
+    #     generation_table.add_data(iter, *outs)
+    #     print(f"step {iter}: train loss {train_loss:.4f}")
+    #     metric_dict = {
+    #         "train_loss": train_loss.item(),
+    #         "iter": iter,
+    #         "generations": wandb.Table(data=generation_table.data, columns=generation_table.columns)
+    #     }
+    #     run.log(metric_dict)
+    #     if (((min_loss - train_loss) / min_loss) > config.update_threshold) and save_model:
+    #         min_loss = train_loss
+    #         save_state(model, optimizer, model_dir)
+    #         # save model weights as latest
+    #         model_artifact = wandb.Artifact(f"model_{run.id}", type="model")
+    #         model_artifact.add_file(os.path.join(model_dir, "model.pth"))
+    #         run.log_artifact(model_artifact,aliases=["latest"])
 
 run.finish()
 

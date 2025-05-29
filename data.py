@@ -1,6 +1,6 @@
 import torch
-from torch.utils.data import Dataset
-
+from torch.utils.data import Dataset, IterableDataset
+from datasets import load_dataset
 """
 Dataset class for neogpt
 """
@@ -32,3 +32,22 @@ class TextDataset(Dataset):
         y = self.tokens[idx + 1:idx + self.block_size + 1]
         return x, y
   
+class StreamingTextDataset(IterableDataset):
+    def __init__(self,block_size,tokenizer):
+        self.ds = load_dataset("HuggingFaceFW/fineweb-edu", name="sample-10BT", split="train", streaming=True)
+        self.tokenizer = tokenizer
+        # later figure out how to put a endoftexttokenizer in my tokenizer
+        self.block_size = block_size
+        self.buffer = []
+
+    def __iter__(self): 
+        for sample in self.ds:
+            text = sample["text"]
+            tokens = self.tokenizer.encode(text)
+            self.buffer.extend(tokens)
+
+            while len(self.buffer) >= self.block_size + 1:
+                x = self.buffer[:self.block_size]
+                y = self.buffer[1:self.block_size + 1]
+                yield torch.tensor(x, dtype=torch.long), torch.tensor(y, dtype=torch.long)
+                self.buffer = self.buffer[1:]

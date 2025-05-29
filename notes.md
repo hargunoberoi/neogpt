@@ -227,3 +227,17 @@ I am making a strategic decision to not focus on it right now because I want to 
 
 Focusing on that seems to be more useful at the moment, but for a later time, I need to get a little more comfortable with pytorch.
 
+[2025-05-29 16:01:52]
+
+Training works! Success. Mission KGB is on.
+
+Next up, I need to figure out how to train with a larger dataset. Or should I tackle ddp first?
+
+[2025-05-29 17:41:29]
+
+I've decided I'd first do the data training, i.e go to the big dataset and then figure out ddp.
+
+Reason why I think this is the right approach is that ddp is optional, but figuring out how to work with large datasets is imperative.
+
+Diving in to figure out how to use huggingface datasets library to make this happen.
+
