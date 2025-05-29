@@ -35,7 +35,7 @@ fi
     
 # Run main training
 echo "Starting main model training..."
-python train.py
+python train_model.py
 
 echo "All tasks completed successfully!"
 echo "Your GPT model training pipeline has finished." 
