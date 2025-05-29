@@ -206,3 +206,15 @@ Download ddp related material because I think I am ready for that now.
 I could also do the additional exercises like improving the transformer model code, and doing the additional exercises as suggested by Andrej. 
 
 Overall, from resource point of view, I do think I am set, although the dataset could be a catch. But I am betting that Huggingface would solve that problem.
+
+[2025-05-29 12:56:04]
+
+Alright, doing the challenges by andrej, I think I am ready for that.
+
+EX1: The n-dimensional tensor mastery challenge: Combine the Head and MultiHeadAttention into one class that processes all the heads in parallel, treating the heads as another batch dimension (answer is in nanoGPT).
+
+This means combining the AttentionHead code with Multi-Attention Head.
+
+[2025-05-29 13:42:54]
+
+Done! Wohoo! This was not as hard as I imagined, and the code is much shorter too! Super pleased!

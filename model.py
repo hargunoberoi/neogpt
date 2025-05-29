@@ -49,7 +49,44 @@ class Head(nn.Module):
         out = softmax_attn @ v
         return out
     
+class AttentionHead(nn.Module):
 
+    def __init__(self, n_embd, num_heads,block_size,dropout):
+        super().__init__()
+        self.key = nn.Linear(n_embd, n_embd,bias=False)
+        self.query = nn.Linear(n_embd, n_embd,bias=False)
+        self.value = nn.Linear(n_embd, n_embd,bias=False)
+        self.proj = nn.Linear(n_embd, n_embd, bias=False)
+        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+        self.dropout = nn.Dropout(dropout)
+        self.num_heads = num_heads
+
+    def forward(self, x):
+        B,T,C = x.shape
+        q = self.query(x) # B,T,E
+        k = self.key(x)
+        v = self.value(x)
+
+        # done: operations to perform
+        # 1. reshape last dimension to N,E (N -> num heads)
+        # 2. transpose -3 and -2 to go from B,T,N,H to B,N,T,H
+        q = q.view(B, T, self.num_heads, -1).transpose(1, 2)
+        k = k.view(B, T, self.num_heads, -1).transpose(1, 2)
+        v = v.view(B, T, self.num_heads, -1).transpose(1, 2)
+
+        uniform_attn = q @ k.transpose(-2,-1) * k.shape[-1]**-0.5
+        uniform_attn = uniform_attn.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
+        softmax_attn = F.softmax(uniform_attn, dim=-1)
+        softmax_attn = self.dropout(softmax_attn)
+        out = softmax_attn @ v # B,N,T,H
+
+        # todo: reverse operations
+        out = out.transpose(1, 2) 
+        out = out.reshape(B, T, -1)
+
+        # apply projection and dropout
+        out = self.dropout(self.proj(out))
+        return out 
 class MultiHeadAttention(nn.Module):
 
     def __init__(self, n_embd, n_head, block_size, dropout, num_heads, head_size):
@@ -63,13 +100,12 @@ class MultiHeadAttention(nn.Module):
         out = self.dropout(self.proj(out))
         return out
 
-
 class Block(nn.Module):
 
     def __init__(self, n_embd, n_head, block_size, dropout):
         super().__init__()
         head_size = n_embd // n_head
-        self.sa = MultiHeadAttention(n_embd, n_head, block_size, dropout, n_head, head_size)
+        self.sa = AttentionHead(n_embd, n_head, block_size, dropout )
         self.ffwd = FeedForward(n_embd, dropout)
         self.ln1 = nn.LayerNorm(n_embd)
         self.ln2 = nn.LayerNorm(n_embd)
