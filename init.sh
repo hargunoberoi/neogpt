@@ -16,7 +16,7 @@ fi
 
 # Install dependencies
 echo "Installing dependencies from requirements.txt..."
-pip install -r requirements.txt
+pip install -r requirements.txt &> /dev/null
 
 # Check if models folder exists
 if [ ! -d "models" ]; then
