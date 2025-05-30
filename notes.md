@@ -274,3 +274,23 @@ Anyway, time to take a break.
 Back. 
 
 Let's tackle ddp.
+
+[2025-05-30 16:02:02]
+
+DDP is done. I understand it.
+
+I'm moving to the video by Andrej, I think I should be able to squeeze it well.
+
+[2025-05-30 17:59:04]
+
+So my run abruptly ended, however it shows "finished". Not sure what happened there, but DDP gave the model a boost for sure.
+
+But I have discovered a big weakness of this model.
+
+I have trained the tokenizer on the stupid shakespeare dataset and then I am expecting it "figure out" how to do other stuff. The tokenizer is not only very limited, but also very poor. 
+
+I'm thinking of leaving a long run tonight and that would mean pushing to complete the Andrej video tonight. This allows me all weekend to train (Basically two full days before I return on Monday).
+
+I think this is a stellar idea (if I can pull it off that is)
+
+First, let's rearrange the model so as to be able to load the weights from huggingface.
