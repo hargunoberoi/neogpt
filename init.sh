@@ -32,10 +32,6 @@ else
         echo "Models already downloaded, skipping download step."
     fi      
 fi
-    
-# Run main training
-echo "Starting main model training..."
-python train_model.py
 
 echo "All tasks completed successfully!"
-echo "Your GPT model training pipeline has finished." 
+echo "You can now train your model" 

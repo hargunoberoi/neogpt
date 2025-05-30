@@ -34,7 +34,7 @@ else:
     raise AssertionError("Model needs to be trained")
 
 # Run inference
-prompt = "Thou shall not"
+prompt = "Hargun Singh Oberoi is"
 print(f"Prompt: {prompt}")
 prompt_tokens = hartokenizer.encode(prompt)
 prompt_tensor = torch.tensor(prompt_tokens, dtype=torch.long, device=device).unsqueeze(0)

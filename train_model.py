@@ -9,8 +9,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from model import GPT
 from itertools import cycle
-from utils import save_state, load_state, estimate_loss
+from utils import save_state, load_state, estimate_loss, generate_from_model
 import wandb
+
  #%% set up device, config and tokenizer, wandb
 # set the device early on
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -25,23 +26,6 @@ else:
     # assertion error: model needs to be trained
     raise AssertionError("Model needs to be trained")
 
-# generate hexadecimal code for id
-
-id = '4722794' + wandb.util.generate_id()
-
-run = wandb.init(
-    project="neogpt",
-    config=config.__dict__,
-    name="fineweb-training",
-    id = id,
-)
-
-# alert that a run has started
-run.alert(
-    title="Run started",
-    text=f"Run {run.name} with id {run.id} has started.",
-    level="INFO"
-)
 #%% set train and validation data loaders
 # input data and tokenize 
 
@@ -60,18 +44,25 @@ save_model = True
 # load_model = False - to configure later and allow for restarting training
 
 #%%generate from model
-def generate_from_model(prompt, model, tokenizer, config, device):
-    prompt_tokens = tokenizer.encode(prompt)
-    prompt_tensor = torch.tensor(prompt_tokens, dtype=torch.long, device=device).unsqueeze(0)
-    output = model.generate(prompt_tensor, config.max_new_tokens)
-    output_list = output[0].tolist()
-    output_text = tokenizer.decode(output_list)
-    return output_text
-
 sample_prompts = [
     "Hargun Singh Oberoi is",
 ]
 
+id = '4722794' + wandb.util.generate_id()
+
+run = wandb.init(
+    project="neogpt",
+    config=config.__dict__,
+    name="fineweb-training",
+    id = id,
+)
+
+# alert that a run has started
+run.alert(
+    title="Run started",
+    text=f"Run {run.name} with id {run.id} has started.",
+    level="INFO"
+)
 generation_table = wandb.Table(columns = ["iter"] + sample_prompts)
 #%% Train model
 for iter in range(config.max_iters):
@@ -106,5 +97,3 @@ for iter in range(config.max_iters):
             run.log_artifact(model_artifact,aliases=["latest"])
 
 run.finish()
-
-# %%

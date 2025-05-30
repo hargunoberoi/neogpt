@@ -33,15 +33,20 @@ class TextDataset(Dataset):
         return x, y
   
 class StreamingTextDataset(IterableDataset):
-    def __init__(self,block_size,tokenizer):
+    def __init__(self,block_size,tokenizer, rank=0,world_size=1):
         self.ds = load_dataset("HuggingFaceFW/fineweb-edu", name="sample-10BT", split="train", streaming=True)
         self.tokenizer = tokenizer
         # later figure out how to put a endoftexttokenizer in my tokenizer
         self.block_size = block_size
         self.buffer = []
+        self.rank = rank
+        self.world_size = world_size
 
     def __iter__(self): 
-        for sample in self.ds:
+        for i,sample in enumerate(self.ds):
+            if i % self.world_size != self.rank:
+                continue
+            
             text = sample["text"]
             tokens = self.tokenizer.encode(text)
             self.buffer.extend(tokens)

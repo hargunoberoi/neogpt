@@ -241,3 +241,36 @@ Reason why I think this is the right approach is that ddp is optional, but figur
 
 Diving in to figure out how to use huggingface datasets library to make this happen.
 
+[2025-05-29 18:57:22]
+
+Surprisingly, this is so clearly taken care of. 
+
+The huggingface datasets library is perfectly capable of meeting all the needs.
+
+I don't even need to "download" the data anywhere. I just pull it on the fly and train.
+
+What remains now is DDP, and then I think I am ready for the Andrej video (or put it better, then I can squeeze the most out of what was provided there).
+
+Today's progress was spectacular but obviously built on past work.
+
+1. I redesigned the gpt, I can now see it in my mind's eye
+2. I figured out how to make a **free** online training process work.
+3. What remains now?
+
+A lot. I think there are few important concepts that I need to get on top of: 
+
+- pytorch
+- oop with python
+- python iterators
+- distributed training
+- Handling special tokens in tokenizer
+
+When I come back tomorrow, I think I should tackle ddp and squeeze Andrej video before I take up anything else. Also handling special tokens - even though I have incorporated them in hartokenizer, I don't understand it very well, and more depressingly I don't know how to incorporate it in training.
+
+Anyway, time to take a break.
+
+[2025-05-30 10:29:21]
+
+Back. 
+
+Let's tackle ddp.
