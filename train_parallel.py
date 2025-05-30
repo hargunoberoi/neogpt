@@ -37,6 +37,8 @@ def train(rank, world_size):
     model = model.to(rank)
     ddp_model = DDP(model, device_ids=[rank])
     optimizer = torch.optim.AdamW(ddp_model.parameters(), lr=config.learning_rate)
+    # print start message
+    print(f'Rank {rank}, Starting training with {world_size} processes.')
     for iter in range(config.max_iters):
         # sample a batch of data
         xb, yb = next(train_data_iter)
@@ -47,10 +49,10 @@ def train(rank, world_size):
         loss.backward()
         optimizer.step()
 
-    # every once a while log train loss
-    if iter % config.eval_interval == 0 or iter == config.max_iters - 1:
-        train_loss = estimate_loss(ddp_model, train_data_iter, config.eval_iters, device=rank)
-        print(f'Rank {rank}, Iter {iter}, Train Loss: {train_loss.item()}')
+        # every once a while log train loss
+        if iter % config.eval_interval == 0 or iter == config.max_iters - 1:
+            train_loss = estimate_loss(ddp_model, train_data_iter, config.eval_iters, device=rank)
+            print(f'Rank {rank}, Iter {iter}, Train Loss: {train_loss.item()}')
         
     dist.destroy_process_group()
 
