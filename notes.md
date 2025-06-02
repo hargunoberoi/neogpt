@@ -294,3 +294,9 @@ I'm thinking of leaving a long run tonight and that would mean pushing to comple
 I think this is a stellar idea (if I can pull it off that is)
 
 First, let's rearrange the model so as to be able to load the weights from huggingface.
+
+[2025-06-02 14:34:17]
+
+The weight tieing is a stellar idea. Basically you save 30% in model size just by correctly identifying that embeddings and model outputs are basically the same idea, i.e taking tokens and getting rich representations from them.
+
+I get it.

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from dataclasses import dataclass
 from transformers import GPT2LMHeadModel
 import tiktoken
-
+#%%x
 @dataclass
 class GPTConfig:
     block_size: int = 1024
@@ -93,7 +93,8 @@ class GPT(nn.Module):
             ln_f = nn.LayerNorm(config.n_embd),
         ))
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-
+        # weight sharing scheme
+        self.transformer.wte.weight = self.lm_head.weight
         self.apply(self._init_weights)
 
     def _init_weights(self, module):
