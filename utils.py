@@ -6,7 +6,7 @@ from typing import Dict, Any
 import yaml
 import torch
 import os
-
+import math
 @dataclass
 class ModelConfig:
     """
@@ -94,3 +94,18 @@ def generate_from_model(prompt, model, tokenizer, config, device):
     output_list = output[0].tolist()
     output_text = tokenizer.decode(output_list)
     return output_text
+
+def get_lr(iteration, warmup_iters, max_lr, min_lr, max_iters):
+    #1) linear warmup for warmup_iters
+    if iteration < warmup_iters:
+        return max_lr * (iteration + 1) / (warmup_iters + 1)
+    
+    # 2) if it > lr_decay_iters, return min learning rate
+    if iteration > max_iters:
+        return min_lr
+    
+    #3) in between, use cosine decay down to min learning rate
+    decay_ratio = (iteration - warmup_iters) / (max_iters - warmup_iters)
+    assert 0 <= decay_ratio <= 1, "Decay ratio must be between 0 and 1"
+    coeff = 0.5 * (1. + math.cos(math.pi*decay_ratio))
+    return min_lr + coeff * (max_lr - min_lr)

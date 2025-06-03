@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from dataclasses import dataclass
 from transformers import GPT2LMHeadModel
 import tiktoken
+import inspect
 #%%x
 @dataclass
 class GPTConfig:
@@ -179,7 +180,24 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits, targets)
 
         return logits, loss
-            
+
+    def configure_optimizers(self, weight_decay, learning_rate, device):
+        param_dict = {pn: p for pn, p in self.named_parameters() if p.requires_grad}
+        decay_params = [p for n, p in param_dict.items() if p.dim() > 1]
+        no_decay_params = [p for n, p in param_dict.items() if p.dim() < 2]
+        optim_groups = [
+            {"params": decay_params, "weight_decay": weight_decay},
+            {"params": no_decay_params, "weight_decay": 0.0},
+        ]
+        fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
+        use_fused = fused_available and device.type == 'cuda'
+        optimizer = torch.optim.AdamW(optim_groups, 
+                                      lr=learning_rate,
+                                      betas=(0.9, 0.95),
+                                      eps=1e-8,
+                                      fused=use_fused)
+        return optimizer
+
     def generate(self, idx,max_new_tokens):
         block_size = self.config.block_size
         for _ in range(max_new_tokens):

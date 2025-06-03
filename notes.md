@@ -315,3 +315,10 @@ Things to do:
 - no wandb logging for now ✅
 - no saving weights for now ✅
 - add logging and weight saving logic within the model itself? (decide)
+
+[2025-06-03 18:04:32]
+
+New stuff: 
+
+- Add learning rate scheduling
+- Add weight decay (and fused kernels for optimizers)

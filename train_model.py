@@ -9,7 +9,7 @@ import tiktoken
 from itertools import cycle
 from model import GPT, GPTConfig
 import argparse
-from utils import save_state, load_state, estimate_loss, generate_from_model
+from utils import save_state, load_state, estimate_loss, generate_from_model, get_lr
 import wandb
 import time
 
@@ -55,13 +55,16 @@ train_data_iter = cycle(train_data)
 # get the model
 model = GPT(config)
 model = model.to(device)
-model = torch.compile(model)  # compile the model for performance
+model = torch.compile(model) if device == 'cuda' else model  # compile if on CUDA
 
-learning_rate = 6e-4
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+max_lr = 6e-4
+min_lr = max_lr * 0.1
+warmup_steps = 10
+max_iters = args.max_iters
+optimizer = model.configure_optimizers(weight_decay=1e-1, learning_rate=max_lr, device=device)
 
 #%% Train model
-for iter in range(args.max_iters):
+for iter in range(max_iters):
     # sample a batch of data
     t0 = time.time()
     xb, yb = next(train_data_iter)
@@ -70,12 +73,16 @@ for iter in range(args.max_iters):
     # backprop
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
+    # set the new learning rate as per scheduler
+    lr = get_lr(iter, warmup_steps, max_lr, min_lr, max_iters)
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
     optimizer.step()
     if device == 'cuda':
         torch.cuda.synchronize()  # synchronize to ensure all operations are complete
     t1 = time.time()
     dt = t1 - t0
     tokens_processed = args.batch_size * config.block_size
-    print(f"step {iter} | loss {loss.item():.4f} | dt {dt:.2f}s | tokens/sec {tokens_processed / dt:.2f}")
+    print(f"step {iter} | loss {loss.item():.4f} | lr {lr:.3e} | dt {dt:.2f}s | tokens/sec {tokens_processed / dt:.2f}")
 
 # %%
