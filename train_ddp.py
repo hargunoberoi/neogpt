@@ -92,7 +92,7 @@ def train(rank,world_size):
         loss_accum = 0.0
         for micro_step in range(grad_accum_steps):
             xb, yb = next(train_iter)
-            xb, yb = xb.to(rank), yb.to(rank)
+            xb, yb = xb.to(device), yb.to(device)
             logits, loss = model(xb, yb)
             loss = loss / grad_accum_steps
             loss_accum += loss.item()
@@ -117,3 +117,7 @@ def train(rank,world_size):
 def main():
     world_size = torch.cuda.device_count()
     mp.spawn(train,args=(world_size,),nprocs=world_size)
+
+
+if __name__ == "__main__":
+    main()
