@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser(description="Train a GPT model")
 parser.add_argument("--max_iters", type=int, default=5, help="Maximum number of training iterations")
 parser.add_argument("--batch_size", type=int, default=4, help="Batch size for training")
 args = parser.parse_args()
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 #%%
 tokenizer = tiktoken.get_encoding("gpt2")
@@ -55,7 +55,7 @@ train_data_iter = cycle(train_data)
 # get the model
 model = GPT(config)
 model = model.to(device)
-model = torch.compile(model) if device == 'cuda' else model  # compile if on CUDA
+model = torch.compile(model) if device.type == 'cuda' else model  # compile if on CUDA
 
 max_lr = 6e-4
 min_lr = max_lr * 0.1
@@ -78,7 +78,7 @@ for iter in range(max_iters):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     optimizer.step()
-    if device == 'cuda':
+    if device.type == 'cuda':
         torch.cuda.synchronize()  # synchronize to ensure all operations are complete
     t1 = time.time()
     dt = t1 - t0
