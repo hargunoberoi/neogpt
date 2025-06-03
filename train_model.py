@@ -1,72 +1,69 @@
 #%% import modules/libraries
-from harbpe import RegexTokenizer
 from utils import ModelConfig
 from data import TextDataset, StreamingTextDataset
 from torch.utils.data import DataLoader
 import os
+import sys
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from model import GPT
+import tiktoken
 from itertools import cycle
+from model import GPT, GPTConfig
+import argparse
 from utils import save_state, load_state, estimate_loss, generate_from_model
 import wandb
+import time
 
- #%% set up device, config and tokenizer, wandb
-# set the device early on
+# set config
+parser = argparse.ArgumentParser(description="Train a GPT model")
+parser.add_argument("--max_iters", type=int, default=5, help="Maximum number of training iterations")
+parser.add_argument("--batch_size", type=int, default=4, help="Batch size for training")
+args = parser.parse_args()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-model_dir = "models"
-# Load configuration
-config = ModelConfig.from_yaml("model_config.yaml")
+
 #%%
-hartokenizer = RegexTokenizer()
-if os.path.exists("models/tokenizer.model"):
-    hartokenizer.load("models/tokenizer.model")
-else:
-    # assertion error: model needs to be trained
-    raise AssertionError("Model needs to be trained")
+tokenizer = tiktoken.get_encoding("gpt2")
 
 #%% set train and validation data loaders
 # input data and tokenize 
+with open("input.txt", "r") as f:
+    raw_text = f.read()
+tokens = tokenizer.encode(raw_text)
+split_idx = int(0.9 * len(tokens))
 
-train_dataset = StreamingTextDataset(config.block_size, hartokenizer)
+train_tokens = tokens[:split_idx]
+val_tokens = tokens[split_idx:]
 
-# get the dataloader 
-train_data = DataLoader(train_dataset, batch_size=config.batch_size,shuffle=False)
-train_data_iter = cycle(train_data)
 
 # %% Initialize model 
-model = GPT(config.vocab_size, config.n_embd, config.n_head, config.n_layer, config.block_size, config.dropout)
+# Load configuration
+"""
+All improvements based on AK suggestions
+- reduce matmul precision
+- set "good" vocab size
+- use torch compile
+- use flash attention
+"""
+torch.set_float32_matmul_precision('high')
+improved_vocab_size = 50304
+config = GPTConfig(vocab_size=improved_vocab_size)
+# get the dataset and dataloader
+train_dataset = TextDataset(train_tokens, config.block_size)
+val_dataset = TextDataset(val_tokens, config.block_size)
+train_data = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+val_data = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+train_data_iter = cycle(train_data)
+# get the model
+model = GPT(config)
 model = model.to(device)
-optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
-min_loss = 100.0 # setting a very high initial loss
-save_model = True
-# load_model = False - to configure later and allow for restarting training
+model = torch.compile(model)  # compile the model for performance
 
-#%%generate from model
-sample_prompts = [
-    "Hargun Singh Oberoi is",
-]
+learning_rate = 6e-4
+optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
-id = '4722794' + wandb.util.generate_id()
-
-run = wandb.init(
-    project="neogpt",
-    config=config.__dict__,
-    name="fineweb-training",
-    id = id,
-)
-
-# alert that a run has started
-run.alert(
-    title="Run started",
-    text=f"Run {run.name} with id {run.id} has started.",
-    level="INFO"
-)
-generation_table = wandb.Table(columns = ["iter"] + sample_prompts)
 #%% Train model
-for iter in range(config.max_iters):
+for iter in range(args.max_iters):
     # sample a batch of data
+    t0 = time.time()
     xb, yb = next(train_data_iter)
     xb, yb = xb.to(device), yb.to(device)
     logits, loss = model(xb, yb)
@@ -74,26 +71,11 @@ for iter in range(config.max_iters):
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
     optimizer.step()
-    # do this ocassionally to save the model state
-    if iter % config.eval_interval == 0 or iter == config.max_iters - 1:
-        train_loss = estimate_loss(model, train_data_iter, config.eval_iters, device=device)
-        # randomly select a sample prompt
-        outs = [generate_from_model(prompt, model, hartokenizer, config, device) for prompt in sample_prompts]
-        # log to generation table
-        generation_table.add_data(iter, *outs)
-        print(f"step {iter}: train loss {train_loss:.4f}")
-        metric_dict = {
-            "train_loss": train_loss.item(),
-            "iter": iter,
-            "generations": wandb.Table(data=generation_table.data, columns=generation_table.columns)
-        }
-        run.log(metric_dict)
-        if (((min_loss - train_loss) / min_loss) > config.update_threshold) and save_model:
-            min_loss = train_loss
-            save_state(model, optimizer, model_dir)
-            # save model weights as latest
-            model_artifact = wandb.Artifact(f"model_{run.id}", type="model")
-            model_artifact.add_file(os.path.join(model_dir, "model.pth"))
-            run.log_artifact(model_artifact,aliases=["latest"])
+    if device == 'cuda':
+        torch.cuda.synchronize()  # synchronize to ensure all operations are complete
+    t1 = time.time()
+    dt = t1 - t0
+    tokens_processed = args.batch_size * config.block_size
+    print(f"step {iter} | loss {loss.item():.4f} | dt {dt:.2f}s | tokens/sec {tokens_processed / dt:.2f}")
 
-run.finish()
+# %%

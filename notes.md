@@ -300,3 +300,18 @@ First, let's rearrange the model so as to be able to load the weights from huggi
 The weight tieing is a stellar idea. Basically you save 30% in model size just by correctly identifying that embeddings and model outputs are basically the same idea, i.e taking tokens and getting rich representations from them.
 
 I get it.
+
+[2025-06-03 16:10:17]
+
+Alright, I've done the "spectating" of the video, now it is time to implement stuff.
+
+I might have to take a few steps back and forth. First, I think it will be a good idea to start crushing shakespeare again.
+
+Things to do: 
+
+- Get to old dataset (shakespeare) ✅
+- replace harbpe with tiktoken for simplicity ✅
+- apply speed boosting optimization ✅
+- no wandb logging for now ✅
+- no saving weights for now ✅
+- add logging and weight saving logic within the model itself? (decide)

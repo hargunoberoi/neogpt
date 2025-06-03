@@ -21,9 +21,8 @@ class AttentionHead(nn.Module):
         assert config.n_embd % config.n_head == 0, "Embedding dimension must be divisible by number of heads"
         self.c_attn = nn.Linear(config.n_embd, 3 * config.n_embd)
         self.c_proj = nn.Linear(config.n_embd, config.n_embd)
-    
-        self.register_buffer('bias', torch.tril(torch.ones(config.block_size, config.block_size))
-                                .view(1, 1, config.block_size, config.block_size))
+        # peform initialization scaling according to gpt-2 paper
+        self.c_proj.HARSCALE_INIT = 1 
         # self.dropout = nn.Dropout(config.dropout)
         self.n_heads = config.n_head
         self.n_embd = config.n_embd
@@ -36,12 +35,7 @@ class AttentionHead(nn.Module):
         k = k.view(B, T, self.n_heads, -1).transpose(1, 2)
         v = v.view(B, T, self.n_heads, -1).transpose(1, 2)
 
-        uniform_attn = q @ k.transpose(-2,-1) * k.shape[-1]**-0.5
-        uniform_attn = uniform_attn.masked_fill(self.bias[:,:,:T, :T] == 0, float('-inf'))
-        softmax_attn = F.softmax(uniform_attn, dim=-1)
-        # softmax_attn = self.dropout(softmax_attn) # no dropouts in actual implementation
-        out = softmax_attn @ v # B,N,T,H
-
+        out = F.scaled_dot_product_attention(q,k,v,is_causal=True) # flash attention
         # reverse operations
         out = out.transpose(1, 2).contiguous() # B,T,N,H 
         out = out.view(B, T, C) # B,T,C
@@ -58,6 +52,7 @@ class FeedForward(nn.Module):
         self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd)
         self.gelu = nn.GELU(approximate='tanh')
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd)
+        self.c_proj.HARSCALE_INIT = 1  # perform initialization scaling according to gpt-2 paper
 
     def forward(self, x):
         x = self.c_fc(x)  # B,T,4*C
@@ -99,7 +94,10 @@ class GPT(nn.Module):
 
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
-            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            std = 0.02
+            if hasattr(module, 'HARSCALE_INIT'):
+                std *= (2 * self.config.n_layer)**-0.5 
+            torch.nn.init.normal_(module.weight, mean=0.0, std=std)
             if module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
         elif isinstance(module, nn.Embedding):
