@@ -339,3 +339,13 @@ But good news is both the steps can be easily tested with my kaggle integration
 Done with gradient accumulation, it was honestly not the most difficult step. 
 
 That comes later 😃
+
+[2025-06-03 18:30:26]
+
+Which is now. 
+
+Time for ddp. "Use all of your talent, I know you have a lot of it!"
+
+[2025-06-03 19:30:20]
+
+Looks like I have ddp done. I am expecting some bugs, but I'll take it out for a spin.

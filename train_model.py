@@ -70,7 +70,6 @@ T = config.block_size
 assert total_batch_size % (B * T) == 0, "This will be true because B and T are both powers of 2"
 grad_accum_steps = total_batch_size // (B*T)
 
-
 #%% Train model
 for iter in range(max_iters):
     # sample a batch of data
@@ -94,7 +93,7 @@ for iter in range(max_iters):
         torch.cuda.synchronize()  # synchronize to ensure all operations are complete
     t1 = time.time()
     dt = t1 - t0
-    tokens_processed = args.batch_size * config.block_size * grad_accum_steps
-    print(f"step {iter} | loss {loss_accum:.4f} | lr {lr:.3e} | norm: {norm:.4f} | dt {dt:.2f}s | tokens/sec {tokens_processed / dt:.2f}")
+    tokens_processed = B * T * grad_accum_steps
+    print(f"step {iter} | loss {loss_accum:.4f} | lr {lr:.3e} | norm: {norm:.4f} | dt {dt:.2f}s | tokens processed {tokens_processed} | tokens/sec {tokens_processed / dt:.2f}")
 
 # %%
