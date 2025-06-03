@@ -63,16 +63,28 @@ warmup_steps = 10
 max_iters = args.max_iters
 optimizer = model.configure_optimizers(weight_decay=1e-1, learning_rate=max_lr, device=device)
 
+# gpt based updates
+total_batch_size = 2**19 #524288 ~0.5M as per gpt paper
+B = args.batch_size
+T = config.block_size
+assert total_batch_size % (B * T) == 0, "This will be true because B and T are both powers of 2"
+grad_accum_steps = total_batch_size // (B*T)
+
+
 #%% Train model
 for iter in range(max_iters):
     # sample a batch of data
     t0 = time.time()
-    xb, yb = next(train_data_iter)
-    xb, yb = xb.to(device), yb.to(device)
-    logits, loss = model(xb, yb)
-    # backprop
     optimizer.zero_grad(set_to_none=True)
-    loss.backward()
+    loss_accum = 0.0
+    for micro_step in range(grad_accum_steps):
+        xb, yb = next(train_data_iter)
+        xb, yb = xb.to(device), yb.to(device)
+        logits, loss = model(xb, yb)
+        loss = loss / grad_accum_steps
+        loss_accum += loss.item()
+        loss.backward()  # accumulate gradients
+    norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)  # gradient clipping
     # set the new learning rate as per scheduler
     lr = get_lr(iter, warmup_steps, max_lr, min_lr, max_iters)
     for param_group in optimizer.param_groups:
@@ -82,7 +94,7 @@ for iter in range(max_iters):
         torch.cuda.synchronize()  # synchronize to ensure all operations are complete
     t1 = time.time()
     dt = t1 - t0
-    tokens_processed = args.batch_size * config.block_size
-    print(f"step {iter} | loss {loss.item():.4f} | lr {lr:.3e} | dt {dt:.2f}s | tokens/sec {tokens_processed / dt:.2f}")
+    tokens_processed = args.batch_size * config.block_size * grad_accum_steps
+    print(f"step {iter} | loss {loss_accum:.4f} | lr {lr:.3e} | norm: {norm:.4f} | dt {dt:.2f}s | tokens/sec {tokens_processed / dt:.2f}")
 
 # %%

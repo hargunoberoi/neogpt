@@ -320,5 +320,22 @@ Things to do:
 
 New stuff: 
 
-- Add learning rate scheduling
-- Add weight decay (and fused kernels for optimizers)
+- Add learning rate scheduling ✅
+- Add weight decay (and fused kernels for optimizers) ✅
+
+[2025-06-03 18:15:50]
+
+New stuff: 
+
+- Add gradient accumulation ✅
+- Add ddp
+
+I think this is going to be the most important part. Grad accumulation should happen quickly, but ddp will be a challenge simply because I want to do ddp differently (based on what I learned)
+
+But good news is both the steps can be easily tested with my kaggle integration
+
+[2025-06-03 18:26:56]
+
+Done with gradient accumulation, it was honestly not the most difficult step. 
+
+That comes later 😃
