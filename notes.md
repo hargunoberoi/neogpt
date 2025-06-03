@@ -349,3 +349,13 @@ Time for ddp. "Use all of your talent, I know you have a lot of it!"
 [2025-06-03 19:30:20]
 
 Looks like I have ddp done. I am expecting some bugs, but I'll take it out for a spin.
+
+[2025-06-03 19:49:31]
+
+DDP done again! My previous work coming real handy.
+
+Now, it's time for to get the actual data, create a validation set, get an evaluation metric (part 1)
+
+Then, saving model weights, and tracking data.
+
+Pretty impressed by what I have so far. Wohoo!

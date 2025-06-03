@@ -55,7 +55,6 @@ B = args.batch_size
 T = config.block_size
 assert total_batch_size % (B * T) == 0, "This will be true because B and T are both powers of 2"
 
-
 #%% Train model
 
 
@@ -110,9 +109,9 @@ def train(rank,world_size):
         torch.cuda.synchronize()  # synchronize to ensure all operations are complete
         t1 = time.time()
         dt = t1 - t0
-        tokens_processed = args.batch_size * config.block_size * grad_accum_steps * world_size  # total tokens processed in this step
+        tokens_processed = B * T * grad_accum_steps * world_size  # total tokens processed in this step
         if rank == 0:
-            print(f"step {iter} | loss {loss_accum:.4f} | lr {lr:.3e} | norm: {norm:.4f} | dt {dt:.2f}s | tokens/sec {tokens_processed / dt:.2f}")
+            print(f"step {iter} | loss {loss_accum:.4f} | lr {lr:.3e} |  norm: {norm:.4f} | dt {dt:.2f}s | tokens processed {tokens_processed} | tokens/sec {tokens_processed / dt:.2f}")
 
     dist.destroy_process_group()  # clean up any existing process group
 # %%
