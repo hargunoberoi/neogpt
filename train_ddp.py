@@ -98,7 +98,9 @@ def train(rank,world_size):
             loss_accum += loss.item()
             model.require_backward_sync = (micro_step == grad_accum_steps - 1)  # only sync gradients on the last micro step
             loss.backward()  # accumulate gradients
-        dist.all_reduce(loss_accum, op=dist.ReduceOp.AVG)  # average loss across all processes
+        loss_tensor = torch.tensor(loss_accum, device=device)  # create a tensor for loss accumulation
+        dist.all_reduce(loss_tensor, op=dist.ReduceOp.AVG)  # average loss across all processes
+        loss_accum = loss_tensor.item()  # convert back to Python float
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)  # gradient clipping
         # set the new learning rate as per scheduler
         lr = get_lr(iter, warmup_steps, max_lr, min_lr, max_iters)
