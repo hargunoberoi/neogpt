@@ -359,3 +359,11 @@ Now, it's time for to get the actual data, create a validation set, get an evalu
 Then, saving model weights, and tracking data.
 
 Pretty impressed by what I have so far. Wohoo!
+
+[2025-06-04 11:31:14]
+
+Alright. It's time to get data.
+
+[2025-06-04 12:47:43]
+
+Fineweb script understood and rewritten. I think it should work. I plan to run this on colab for faster speeds. But then again, stupid colab stops!
