@@ -415,3 +415,11 @@ So the last three hours were spent in debugging some issue that comes with this 
 For now I am disabling sampling and will take care of it later.
 
 Let's test at least if the code is working
+
+[2025-06-05 19:19:47]
+
+Training works on a single gpu, but ddp still failed. 
+
+So I am creating an iterable dataset instead and test how it goes. 
+
+If all else fails, I have the dataloaderlite (which I want to avoid because of the issues it created with the training)

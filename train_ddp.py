@@ -1,8 +1,7 @@
 #%% import modules/libraries
 
-from data import  ShardDataset
+from data import  ShardDataset, ShardIterableDataset
 from torch.utils.data import DataLoader
-from torch.utils.data.distributed import DistributedSampler
 
 import torch.multiprocessing as mp
 import torch.distributed as dist
@@ -31,7 +30,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 improved_vocab_size = 50304
 config = GPTConfig(vocab_size=improved_vocab_size)
 # get the dataset and dataloader
-train_dataset = ShardDataset("edu_fineweb10b", config.block_size, split="train")
+
 val_dataset = ShardDataset("edu_fineweb10b", config.block_size, split="val")
 
 max_lr = 6e-4
@@ -47,7 +46,6 @@ assert total_batch_size % (B * T) == 0, "This will be true because B and T are b
 
 #%% Train model
 
-
 def train(rank,world_size):
 
     os.environ['MASTER_ADDR'] = 'localhost'
@@ -56,11 +54,20 @@ def train(rank,world_size):
     device = torch.device(f"cuda:{rank}")
     torch.cuda.set_device(device)
     # logic of the training loop
-    sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=False)
-    train_loader = DataLoader(train_dataset, 
-                                           batch_size=args.batch_size, 
-                                           sampler=sampler,
-                                           drop_last=True)
+    train_iter_ds = ShardIterableDataset(
+        data_dir="edu_fineweb10b",
+        block_size=config.block_size,
+        split="train",
+        rank=rank,
+        world_size=world_size,
+    )
+    train_loader = DataLoader(
+        train_iter_ds,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=0,
+        drop_last=True,
+    )
     val_loader = DataLoader(val_dataset,
                                              batch_size=args.batch_size, 
                                              shuffle=False,

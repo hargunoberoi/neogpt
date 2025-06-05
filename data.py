@@ -7,6 +7,31 @@ from datasets import load_dataset
 Dataset class for neogpt
 """
 
+class ShardIterableDataset(IterableDataset):
+    def __init__(self, data_dir, block_size, split, rank, world_size):
+        self.block_size = block_size
+        # pick just the shards for this rank
+        all_paths = sorted(
+            os.path.join(data_dir, fn)
+            for fn in os.listdir(data_dir)
+            if split in fn
+        )
+        assert all_paths, f"no shards for {split}"
+        # each rank takes every nth file
+        self.shard_paths = all_paths[rank :: world_size]
+        self.rank = rank
+
+    def __iter__(self):
+        for path in self.shard_paths:
+            arr = np.load(path, mmap_mode="r")
+            n_tokens = arr.shape[0]
+            # slide a window of size block_size + 1
+            for i in range(0, n_tokens - self.block_size - 1):
+                x_np = arr[i : i + self.block_size].copy()
+                y_np = arr[i + 1 : i + self.block_size + 1].copy()
+                yield torch.from_numpy(x_np).long(), torch.from_numpy(y_np).long()
+            arr._mmap.close()
+
 class ShardDataset(Dataset):
     def __init__(self, data_dir, block_size, split="train"):
         assert split in ["train","val"]
