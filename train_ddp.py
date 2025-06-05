@@ -56,7 +56,7 @@ def train(rank,world_size):
     device = torch.device(f"cuda:{rank}")
     torch.cuda.set_device(device)
     # logic of the training loop
-    sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True)
+    sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=False)
     train_loader = DataLoader(train_dataset, 
                                            batch_size=args.batch_size, 
                                            sampler=sampler,

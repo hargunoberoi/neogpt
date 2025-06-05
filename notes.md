@@ -407,3 +407,11 @@ I need to think what all is left right now.
 So both methods worked!
 
 I have a tar file and I have it on kaggle. It's time for the test run now. I don't know if everything is set
+
+[2025-06-05 18:43:54]
+
+So the last three hours were spent in debugging some issue that comes with this massive dataset.
+
+For now I am disabling sampling and will take care of it later.
+
+Let's test at least if the code is working
