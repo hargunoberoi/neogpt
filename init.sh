@@ -24,6 +24,6 @@ if [ ! -d "edu_fineweb10" ]; then
         echo "Data download failed. Please check the download_data.py script."
         exit 1
     fi
-
+fi
 echo "All tasks completed successfully!"
 echo "You can now train your model" 
