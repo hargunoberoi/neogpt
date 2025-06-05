@@ -1,16 +1,12 @@
 #%% import modules/libraries
-from utils import ModelConfig
-from data import TextDataset, StreamingTextDataset
+from utils import ModelConfig, get_lr
+from data import ShardDataset
 from torch.utils.data import DataLoader
 import os
-import sys
 import torch
-import tiktoken
 from itertools import cycle
 from model import GPT, GPTConfig
 import argparse
-from utils import save_state, load_state, estimate_loss, generate_from_model, get_lr
-import wandb
 import time
 
 # set config
@@ -20,19 +16,14 @@ parser.add_argument("--batch_size", type=int, default=4, help="Batch size for tr
 args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-#%%
-tokenizer = tiktoken.get_encoding("gpt2")
-
-#%% set train and validation data loaders
-# input data and tokenize 
-with open("input.txt", "r") as f:
-    raw_text = f.read()
-tokens = tokenizer.encode(raw_text)
-split_idx = int(0.9 * len(tokens))
-
-train_tokens = tokens[:split_idx]
-val_tokens = tokens[split_idx:]
-
+# Use ShardDataset instead of TextDataset
+improved_vocab_size = 50304
+config = GPTConfig(vocab_size=improved_vocab_size)
+train_dataset = ShardDataset("edu_fineweb10b", config.block_size, split="train")
+val_dataset = ShardDataset("edu_fineweb10b", config.block_size, split="val")
+train_data = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True)
+val_data = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True)
+train_data_iter = cycle(train_data)
 
 # %% Initialize model 
 # Load configuration
@@ -44,15 +35,6 @@ All improvements based on AK suggestions
 - use flash attention
 """
 torch.set_float32_matmul_precision('high')
-improved_vocab_size = 50304
-config = GPTConfig(vocab_size=improved_vocab_size)
-# get the dataset and dataloader
-train_dataset = TextDataset(train_tokens, config.block_size)
-val_dataset = TextDataset(val_tokens, config.block_size)
-train_data = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-val_data = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
-train_data_iter = cycle(train_data)
-# get the model
 model = GPT(config)
 model = model.to(device)
 model = torch.compile(model) if device.type == 'cuda' else model  # compile if on CUDA
@@ -72,8 +54,23 @@ grad_accum_steps = total_batch_size // (B*T)
 
 #%% Train model
 for iter in range(max_iters):
-    # sample a batch of data
     t0 = time.time()
+    # Periodically run validation, similar to train_ddp.py (every 100 iters)
+    if iter % 100 == 0:
+        model.eval()
+        with torch.no_grad():
+            val_loss_accum = 0.0
+            val_loss_steps = 20
+            val_data_iter = cycle(val_data)
+            for _ in range(val_loss_steps):
+                xb, yb = next(val_data_iter)
+                xb, yb = xb.to(device), yb.to(device)
+                _, loss = model(xb, yb)
+                loss = loss / val_loss_steps
+                val_loss_accum += loss.item()
+            print(f"Validation loss at step {iter}: {val_loss_accum:.4f}")
+        model.train()
+
     optimizer.zero_grad(set_to_none=True)
     loss_accum = 0.0
     for micro_step in range(grad_accum_steps):
