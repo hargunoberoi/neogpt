@@ -3,6 +3,7 @@ harbpe_follow/
 models/
 wandb/
 followvid/
+edu_fineweb/
 scripts/
 # pycache
 __pycache__/

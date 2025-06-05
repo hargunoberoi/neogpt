@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Dict, Any
 import yaml
 import torch
+import numpy as np
 import os
 import math
 @dataclass
@@ -109,3 +110,8 @@ def get_lr(iteration, warmup_iters, max_lr, min_lr, max_iters):
     assert 0 <= decay_ratio <= 1, "Decay ratio must be between 0 and 1"
     coeff = 0.5 * (1. + math.cos(math.pi*decay_ratio))
     return min_lr + coeff * (max_lr - min_lr)
+
+
+def load_tokens(filename):
+    np_tokens = np.load(filename)
+    return np_tokens

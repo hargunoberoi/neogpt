@@ -1,6 +1,6 @@
 #%% import modules/libraries
-from utils import ModelConfig
-from data import TextDataset, StreamingTextDataset
+
+from data import  ShardDataset
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -27,22 +27,12 @@ args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 #%%
-tokenizer = tiktoken.get_encoding("gpt2")
-#%% set train and validation data loaders
-# input data and tokenize 
-with open("input.txt", "r") as f:
-    raw_text = f.read()
-tokens = tokenizer.encode(raw_text)
-split_idx = int(0.9 * len(tokens))
-
-train_tokens = tokens[:split_idx]
-val_tokens = tokens[split_idx:]
 
 improved_vocab_size = 50304
 config = GPTConfig(vocab_size=improved_vocab_size)
 # get the dataset and dataloader
-train_dataset = TextDataset(train_tokens, config.block_size)
-val_dataset = TextDataset(val_tokens, config.block_size)
+train_dataset = ShardDataset("edu_fineweb10b", config.block_size, split="train")
+val_dataset = ShardDataset("edu_fineweb10b", config.block_size, split="val")
 
 max_lr = 6e-4
 min_lr = max_lr * 0.1
@@ -71,7 +61,12 @@ def train(rank,world_size):
                                            batch_size=args.batch_size, 
                                            sampler=sampler,
                                            drop_last=True)
+    val_loader = DataLoader(val_dataset,
+                                             batch_size=args.batch_size, 
+                                             shuffle=False,
+                                             drop_last=True)
     train_iter = cycle(train_loader)
+    val_iter = cycle(val_loader)
                                         
     # jump to here
     torch.set_float32_matmul_precision('high')
@@ -87,6 +82,25 @@ def train(rank,world_size):
     for iter in range(max_iters):
         # sample a batch of data
         t0 = time.time()
+
+        # once in a while evaluate on validation loss
+        if iter % 100 == 0:
+            model.eval()
+            with torch.no_grad():
+                val_loss_accum = 0.
+                val_loss_steps = 20
+                for _ in range(val_loss_steps):
+                    xb, yb = next(val_iter)
+                    xb, yb = xb.to(device), yb.to(device)
+                    _, loss = model(xb, yb)
+                    loss = loss / val_loss_steps  # average loss over steps
+                    val_loss_accum += loss.detach()
+                val_loss_tensor = torch.tensor(val_loss_accum, device=device)  # create a tensor for loss accumulation
+                dist.all_reduce(val_loss_tensor, op=dist.ReduceOp.AVG)  # average loss across all processes
+                val_loss_accum = val_loss_tensor.item()  # convert back to Python float
+                print(f"Validation loss at step {iter}: {val_loss_accum:.4f}")
+
+        model.train()  # switch back to training mode
         optimizer.zero_grad(set_to_none=True)
         loss_accum = 0.0
         for micro_step in range(grad_accum_steps):

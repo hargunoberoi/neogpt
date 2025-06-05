@@ -367,3 +367,43 @@ Alright. It's time to get data.
 [2025-06-04 12:47:43]
 
 Fineweb script understood and rewritten. I think it should work. I plan to run this on colab for faster speeds. But then again, stupid colab stops!
+
+[2025-06-04 14:19:32]
+
+I have all the files. Now it's time to work some wandb magic.
+
+[2025-06-04 16:08:00]
+
+Wandb magic has been pending because I am hitting limits with the storage on kaggle. However, no need to be afraid. I saw that kaggle limits only on one type of disk, however it's /mnt has a tb of storage it allows access to. Kaggle is "simply lovely"
+
+Until then, I also sorted the logic of loading shards in an optimal way. That means, I can now test training the actual fineweb data. This is cool.
+
+What is left: 
+
+- Validation set (achievable)
+- Hellaswag code
+- Logging
+- Model saving
+- Dry run
+
+[2025-06-04 16:56:15]
+
+To my great disappointment, kaggle kernel died as well. What the hell. It used to be one of the more reliable kernels.
+
+Anyway.
+
+I think it's a good idea to set up validation code and hellaswag with it while I'm at it
+
+[2025-06-05 12:53:24]
+
+Alright, after several failures, I've managed to download the data on my laptop itself. Wohoo! 
+
+AWS has not worked disappointingly. I don't think so I will get spot instances. I have to think about getting the dedicated instances.
+
+I need to think what all is left right now.
+
+[2025-06-05 16:01:00]
+
+So both methods worked!
+
+I have a tar file and I have it on kaggle. It's time for the test run now. I don't know if everything is set
