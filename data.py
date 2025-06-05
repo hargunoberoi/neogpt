@@ -38,18 +38,17 @@ class ShardDataset(Dataset):
         shard_idx = int(np.searchsorted(self.prefixes, idx, side="right") - 1)
         if shard_idx != self._current_shard_idx:
             if self._current_arr is not None:
-                # close the old mmap explicitly
                 self._current_arr._mmap.close()
                 self._current_arr = None
             path = self.shard_paths[shard_idx]
-            arr = np.load(path, mmap_mode="r")
-            self._current_arr = arr
+            self._current_arr = np.load(path, mmap_mode="r")
             self._current_shard_idx = shard_idx
 
         local_idx = idx - int(self.prefixes[shard_idx])
         arr = self._current_arr
-        x_np = arr[local_idx : local_idx + self.block_size]
-        y_np = arr[local_idx + 1 : local_idx + self.block_size + 1]
+        # force-copy so the tensor doesn’t hold onto the mmap
+        x_np = arr[local_idx : local_idx + self.block_size].copy()  
+        y_np = arr[local_idx + 1 : local_idx + self.block_size + 1].copy()
         return torch.from_numpy(x_np).long(), torch.from_numpy(y_np).long()
 
 
