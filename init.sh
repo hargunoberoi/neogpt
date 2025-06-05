@@ -26,4 +26,4 @@ if [ ! -d "edu_fineweb10" ]; then
     fi
 fi
 echo "All tasks completed successfully!"
-echo "You can now train your model" 
+echo "You can now train your model"

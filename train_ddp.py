@@ -48,86 +48,81 @@ assert total_batch_size % (B * T) == 0, "This will be true because B and T are b
 #%% Train model
 
 
-def train(rank,world_size):
+def train(rank, world_size):
+    try:
+        os.environ['MASTER_ADDR'] = 'localhost'
+        os.environ['MASTER_PORT'] = '3045' 
+        dist.init_process_group('nccl', rank=rank, world_size=world_size)
+        device = torch.device(f"cuda:{rank}")
+        torch.cuda.set_device(device)
 
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '3045' 
-    dist.init_process_group('nccl', rank=rank, world_size=world_size)
-    device = torch.device(f"cuda:{rank}")
-    torch.cuda.set_device(device)
-    # logic of the training loop
-    sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True)
-    train_loader = DataLoader(train_dataset, 
-                                           batch_size=args.batch_size, 
-                                           sampler=sampler,
-                                           drop_last=True)
-    val_loader = DataLoader(val_dataset,
-                                             batch_size=args.batch_size, 
-                                             shuffle=False,
-                                             drop_last=True)
-    train_iter = cycle(train_loader)
-    val_iter = cycle(val_loader)
-                                        
-    # jump to here
-    torch.set_float32_matmul_precision('high')
-    # get the model
-    model = GPT(config)
-    model = model.to(rank)
-    model = torch.compile(model)
-    model = DDP(model, device_ids=[rank]) # ddp wrapper for distributed training
-    raw_model = model.module  # get the raw model for saving state
-    optimizer = raw_model.configure_optimizers(weight_decay=1e-1, learning_rate=max_lr, device=device)
-    grad_accum_steps = total_batch_size // (B*T* world_size)  # gradient accumulation steps per process
-    # training loop
-    for iter in range(max_iters):
-        # sample a batch of data
-        t0 = time.time()
+        sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True)
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, sampler=sampler, drop_last=True)
+        val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True)
+        train_iter = cycle(train_loader)
+        val_iter = cycle(val_loader)
 
-        # once in a while evaluate on validation loss
-        if iter % 100 == 0:
-            model.eval()
-            with torch.no_grad():
-                val_loss_accum = 0.
-                val_loss_steps = 20
-                for _ in range(val_loss_steps):
-                    xb, yb = next(val_iter)
-                    xb, yb = xb.to(device), yb.to(device)
-                    _, loss = model(xb, yb)
-                    loss = loss / val_loss_steps  # average loss over steps
-                    val_loss_accum += loss.detach()
-                val_loss_tensor = torch.tensor(val_loss_accum, device=device)  # create a tensor for loss accumulation
-                dist.all_reduce(val_loss_tensor, op=dist.ReduceOp.AVG)  # average loss across all processes
-                val_loss_accum = val_loss_tensor.item()  # convert back to Python float
-                print(f"Validation loss at step {iter}: {val_loss_accum:.4f}")
+        torch.set_float32_matmul_precision('high')
+        model = GPT(config)
+        model = model.to(rank)
+        # model = torch.compile(model)
+        model = DDP(model, device_ids=[rank])
+        raw_model = model.module
+        optimizer = raw_model.configure_optimizers(weight_decay=1e-1, learning_rate=max_lr, device=device)
+        grad_accum_steps = total_batch_size // (B * T * world_size)
 
-        model.train()  # switch back to training mode
-        optimizer.zero_grad(set_to_none=True)
-        loss_accum = 0.0
-        for micro_step in range(grad_accum_steps):
-            xb, yb = next(train_iter)
-            xb, yb = xb.to(device), yb.to(device)
-            logits, loss = model(xb, yb)
-            loss = loss / grad_accum_steps
-            loss_accum += loss.item()
-            model.require_backward_sync = (micro_step == grad_accum_steps - 1)  # only sync gradients on the last micro step
-            loss.backward()  # accumulate gradients
-        loss_tensor = torch.tensor(loss_accum, device=device)  # create a tensor for loss accumulation
-        dist.all_reduce(loss_tensor, op=dist.ReduceOp.AVG)  # average loss across all processes
-        loss_accum = loss_tensor.item()  # convert back to Python float
-        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)  # gradient clipping
-        # set the new learning rate as per scheduler
-        lr = get_lr(iter, warmup_steps, max_lr, min_lr, max_iters)
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = lr
-        optimizer.step()
-        torch.cuda.synchronize()  # synchronize to ensure all operations are complete
-        t1 = time.time()
-        dt = t1 - t0
-        tokens_processed = B * T * grad_accum_steps * world_size  # total tokens processed in this step
-        if rank == 0:
-            print(f"step {iter} | loss {loss_accum:.4f} | lr {lr:.3e} |  norm: {norm:.4f} | dt {dt:.2f}s | tokens processed {tokens_processed} | tokens/sec {tokens_processed / dt:.2f}")
+        for iter in range(max_iters):
+            t0 = time.time()
 
-    dist.destroy_process_group()  # clean up any existing process group
+            if iter % 100 == 0:
+                model.eval()
+                with torch.no_grad():
+                    val_loss_accum = 0.
+                    val_loss_steps = 20
+                    for _ in range(val_loss_steps):
+                        xb, yb = next(val_iter)
+                        xb, yb = xb.to(device), yb.to(device)
+                        _, loss = model(xb, yb)
+                        loss = loss / val_loss_steps
+                        val_loss_accum += loss.detach()
+                    val_loss_tensor = torch.tensor(val_loss_accum, device=device)
+                    dist.all_reduce(val_loss_tensor, op=dist.ReduceOp.AVG)
+                    val_loss_accum = val_loss_tensor.item()
+                    print(f"Validation loss at step {iter}: {val_loss_accum:.4f}")
+
+            model.train()
+            print(f"[Rank {rank}] starting, dataset len: {len(train_dataset)}")
+            optimizer.zero_grad(set_to_none=True)
+            loss_accum = 0.0
+            for micro_step in range(grad_accum_steps):
+                xb, yb = next(train_iter)
+                xb, yb = xb.to(device), yb.to(device)
+                logits, loss = model(xb, yb)
+                loss = loss / grad_accum_steps
+                loss_accum += loss.item()
+                model.require_backward_sync = (micro_step == grad_accum_steps - 1)
+                loss.backward()
+            loss_tensor = torch.tensor(loss_accum, device=device)
+            dist.all_reduce(loss_tensor, op=dist.ReduceOp.AVG)
+            loss_accum = loss_tensor.item()
+            norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            lr = get_lr(iter, warmup_steps, max_lr, min_lr, max_iters)
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr
+            optimizer.step()
+            torch.cuda.synchronize()
+            t1 = time.time()
+            dt = t1 - t0
+            tokens_processed = B * T * grad_accum_steps * world_size
+            if rank == 0:
+                print(f"step {iter} | loss {loss_accum:.4f} | lr {lr:.3e} |  norm: {norm:.4f} | dt {dt:.2f}s | tokens processed {tokens_processed} | tokens/sec {tokens_processed / dt:.2f}")
+
+        dist.destroy_process_group()
+    
+    except Exception as e:
+        print(f"[Rank {rank}] crashed: {e}")
+        import traceback
+        traceback.print_exc()
 # %%
 def main():
     world_size = torch.cuda.device_count()
