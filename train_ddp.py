@@ -18,7 +18,8 @@ import wandb
 import time
 
 # create required directories
-os.makedirs(["models", "logs"], exist_ok=True)
+os.makedirs("models", exist_ok=True)
+os.makedirs("logs", exist_ok=True)
 
 # set config
 parser = argparse.ArgumentParser(description="Train a GPT model")
@@ -30,7 +31,7 @@ args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # set logging
-logging.config.basicConfig(
+logging.basicConfig(
     level=getattr(logging, args.log_level.upper(), logging.INFO),
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",

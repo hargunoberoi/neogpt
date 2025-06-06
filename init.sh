@@ -10,7 +10,7 @@ echo "Starting GPT project initialization..."
 echo "Installing dependencies from requirements.txt..."
 pip install -r requirements.txt &> /dev/null
 
-if [ ! -d "edu_fineweb10" ]; then
+if [ ! -d "edu_fineweb10b" ]; then
     echo "Downloading data..."
     python download_dataset.py
 
