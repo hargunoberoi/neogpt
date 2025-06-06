@@ -10,3 +10,5 @@ PyYAML>=6.0
 wandb>=0.15.0
 # For handling large datasets
 datasets>=2.14.0
+# add transformers
+transformers>=4.35.0

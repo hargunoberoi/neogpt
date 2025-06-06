@@ -27,8 +27,8 @@ class ShardIterableDataset(IterableDataset):
             n_tokens = arr.shape[0]
             # slide a window of size block_size + 1
             for i in range(0, n_tokens - self.block_size - 1):
-                x_np = arr[i : i + self.block_size].copy()
-                y_np = arr[i + 1 : i + self.block_size + 1].copy()
+                x_np = arr[i : i + self.block_size].copy().astype(np.int32)
+                y_np = arr[i + 1 : i + self.block_size + 1].copy().astype(np.int32)
                 yield torch.from_numpy(x_np).long(), torch.from_numpy(y_np).long()
             arr._mmap.close()
 

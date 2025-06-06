@@ -12,7 +12,7 @@ pip install -r requirements.txt &> /dev/null
 
 if [ ! -d "edu_fineweb10" ]; then
     echo "Downloading data..."
-    python download_data.py
+    python download_dataset.py
 
     if [ -f "fineweb.tar.gz" ]; then
         tar -xzf fineweb.tar.gz

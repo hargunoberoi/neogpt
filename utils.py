@@ -52,7 +52,7 @@ class ModelConfig:
         return f"ModelConfig({', '.join(attrs)})" 
 
 # save model state
-def save_state(model, optimizer, model_dir):
+def save_state(iteration, model, optimizer, model_dir):
     """
     Save the model and optimizer state.
     """
@@ -60,6 +60,7 @@ def save_state(model, optimizer, model_dir):
     torch.save({
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
+        'iteration': iteration
     }, save_path)
     print(f"Model saved to {save_path}")
 

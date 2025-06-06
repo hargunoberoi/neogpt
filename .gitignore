@@ -1,9 +1,11 @@
 harbpe/
 harbpe_follow/
 models/
+logs/
+secrets/
 wandb/
 followvid/
 edu_fineweb10b/
 scripts/
-# pycache
+*.log   
 __pycache__/

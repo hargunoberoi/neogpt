@@ -429,3 +429,44 @@ If all else fails, I have the dataloaderlite (which I want to avoid because of t
 Now we have 8 A100s.
 
 Time to train like a pro!
+
+[2025-06-06 14:00:48]
+
+Alright. It runs on aws. Let's do this! 
+
+I think first run should be on 10 billion tokens.
+
+But I should do it such that I could restart training from where it stopped.
+
+This way, the initial training run will not be wasted. 
+
+How do I do this?
+
+Things to do 
+
+- Peformance improvement: autocast ✅
+- wandb model saving ✅
+- try kaggle dataset download directly
+- starting stopping instance from terminal command?
+- logging of training loss, validation loss ✅
+- cleanup
+
+[2025-06-06 15:22:41]
+
+Alright! I need to test out whether the stuff that I have done or not works. 
+
+I am a little bit lost right now because there's a ton of stuff that needs to be done and simultaneously.
+
+The thing I want to test is kaggle dataset direct download. this poses another challenge, how to share secrets?
+
+The idea is to run an instance easily from creation (assuming it stops) I don't want to waste too much time restarting the run.
+
+That poses a challenge. But for now, at least this much should run which I should test on kaggle gpus.
+
+The "restart from previous state" is still questionable. I don't know what all I have to restore.
+
+So
+
+- test current use
+- restart run from old state
+- kaggle dataset use
