@@ -40,7 +40,7 @@ fi
 # checking if the model directory exists
 if [ ! -d "models" ]; then
     echo "Downloading model..."
-    if python download_models.py; then
+    if python download_models.py 2>/dev/null; then
         echo "Download succeeded."
     else
         echo "Download failed! Start training from scratch" >&2
