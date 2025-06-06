@@ -31,6 +31,8 @@ parser.add_argument("--batch_size", type=int, default=64, help="Batch size for t
 parser.add_argument("--log_level", type=str, default="DEBUG", help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 # take bool argument to restart training
 parser.add_argument("--restart", action='store_true', help="Restart training from the last checkpoint")
+# get a runid for wandb
+parser.add_argument("--run_id", type=str, default="30452", help="Run ID for wandb")
 args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -117,13 +119,14 @@ def train(rank,world_size):
     #%% training loop
     if rank == 0:
         logging.info(f"Starting training with {world_size} processes.")
-        run_id = '23045' # + wandb.util.generate_id()
+        run_id = args.run_id if args.run_id else wandb.util.generate_id()
         run = wandb.init(
             project="neogpt",
             config=config.__dict__,
             name="fineweb-training",
             id = run_id,
             resume=True,
+            settings = wandb.Settings(init_timeout=120),
         )
         # alert that a run has started
         run.alert(
