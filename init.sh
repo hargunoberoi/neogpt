@@ -15,8 +15,6 @@ if ! command -v wandb &> /dev/null; then
     echo "wandb is not installed. Installing wandb..."
     pip install wandb
 fi
-echo "Logging in to Weights & Biases..."
-wandb login --relogin
 
 if [ ! -d "edu_fineweb10b" ]; then
     echo "Downloading data..."

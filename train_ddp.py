@@ -108,7 +108,7 @@ def train(rank,world_size):
         else:
             logging.info("Loading checkpoint to restart training...")
             start_iter = load_state(model, optimizer, model_dir=model_dir)
-    model = torch.compile(model) 
+    # model = torch.compile(model) 
     model = DDP(model, device_ids=[rank]) # ddp wrapper for distributed training
     grad_accum_steps = total_batch_size // (B*T* world_size)  # gradient accumulation steps per process
     skip_batches = start_iter * grad_accum_steps
@@ -153,9 +153,6 @@ def train(rank,world_size):
                 val_loss_accum = val_loss_tensor.item()  # convert back to Python float
                 if rank == 0:
                     logging.info(f"Validation loss at step {iter}: {val_loss_accum:.4f}")
-                    sample_prompt = "Hargun Singh Oberoi is a"
-                    output_text = generate_from_model(sample_prompt, raw_model, enc, device)
-                    logging.info(f"Sample output: {output_text}")
                     if run is not None:
                         run.log({"val/loss": val_loss_accum}, step=iter)
                         run.alert(
