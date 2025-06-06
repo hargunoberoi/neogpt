@@ -52,7 +52,7 @@ val_dataset = ShardDataset("edu_fineweb10b", config.block_size, split="val")
 max_lr = 6e-4
 min_lr = max_lr * 0.1
 warmup_steps = 715
-eval_iters = 5
+eval_iters = 1000
 max_iters = 200000 # default set to 5 epochs
 # gpt based updates
 total_batch_size = 2**19 #524288 ~0.5M as per gpt paper
