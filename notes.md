@@ -423,3 +423,9 @@ Training works on a single gpu, but ddp still failed.
 So I am creating an iterable dataset instead and test how it goes. 
 
 If all else fails, I have the dataloaderlite (which I want to avoid because of the issues it created with the training)
+
+[2025-06-06 12:00:32]
+
+Now we have 8 A100s.
+
+Time to train like a pro!

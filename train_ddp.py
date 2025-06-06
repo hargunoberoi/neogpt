@@ -21,7 +21,7 @@ import time
 # set config
 parser = argparse.ArgumentParser(description="Train a GPT model")
 parser.add_argument("--max_iters", type=int, default=5, help="Maximum number of training iterations")
-parser.add_argument("--batch_size", type=int, default=4, help="Batch size for training")
+parser.add_argument("--batch_size", type=int, default=64, help="Batch size for training")
 args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
