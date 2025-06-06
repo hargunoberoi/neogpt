@@ -467,6 +467,18 @@ The "restart from previous state" is still questionable. I don't know what all I
 
 So
 
-- test current use
+- test current use ✅
 - restart run from old state
-- kaggle dataset use
+- kaggle dataset use ❌ (not better)
+
+[2025-06-06 17:13:32]
+
+I have decided against using kaggle because what the hell it uses a zip file. My method is better.
+
+Only one thing left to do: restart from state
+
+Alright. Looks fine. What is left now is to modify init to download the model.
+
+[2025-06-06 18:06:41]
+
+Alright. I think all is set; It is time to check this on kaggle first and then at night we start the mega training run.

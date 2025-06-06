@@ -73,7 +73,8 @@ def load_state(model, optimizer, model_dir='models'):
     checkpoint = torch.load(model_file)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    print(f"Model loaded from {model_file}")
+    last_iter = checkpoint['iteration']
+    return last_iter
 
 
 def estimate_loss(model, iterator, num_iters=10, device='cpu'):
