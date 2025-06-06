@@ -482,3 +482,17 @@ Alright. Looks fine. What is left now is to modify init to download the model.
 [2025-06-06 18:06:41]
 
 Alright. I think all is set; It is time to check this on kaggle first and then at night we start the mega training run.
+
+
+[2025-06-06 20:21:12]
+
+There are a bunch of issues here.
+
+First, the logging bit is not working well despite setting the right level. I need to work on that later.
+
+Also, torch.compile, annoyingly is not working right now.
+
+I need the init.sh script to close the instance once it starts.
+
+Restart is not working so well, so I don't know what to do.
+

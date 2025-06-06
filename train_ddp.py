@@ -13,7 +13,7 @@ import tiktoken
 from itertools import cycle
 from model import GPT, GPTConfig
 import argparse
-from utils import save_state, load_state, generate_from_model, get_lr
+from utils import save_state, load_state, get_lr
 import wandb
 import time
 
@@ -25,26 +25,22 @@ os.makedirs(logs_dir, exist_ok=True)
 
 # set config
 parser = argparse.ArgumentParser(description="Train a GPT model")
-parser.add_argument("--max_iters", type=int, default=5, help="Maximum number of training iterations")
-parser.add_argument("--batch_size", type=int, default=64, help="Batch size for training")
+parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training")
 # take argument for logging level
 parser.add_argument("--log_level", type=str, default="DEBUG", help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 # take bool argument to restart training
 parser.add_argument("--restart", action='store_true', help="Restart training from the last checkpoint")
 # get a runid for wandb
 parser.add_argument("--run_id", type=str, default="30452", help="Run ID for wandb")
+parser.add_argument("--logging", action='store_true', help="Enable wandb logging")
 args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # set logging
 logging.basicConfig(
-    level=getattr(logging, args.log_level.upper(), logging.INFO),
     format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("logs/log.txt")
-    ])
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 
 improved_vocab_size = 50304
 config = GPTConfig(vocab_size=improved_vocab_size)
@@ -110,30 +106,32 @@ def train(rank,world_size):
         else:
             logging.info("Loading checkpoint to restart training...")
             start_iter = load_state(model, optimizer, model_dir=model_dir)
-    # model = torch.compile(model) 
+    model = torch.compile(model) 
     model = DDP(model, device_ids=[rank]) # ddp wrapper for distributed training
     grad_accum_steps = total_batch_size // (B*T* world_size)  # gradient accumulation steps per process
     skip_batches = start_iter * grad_accum_steps
     for _ in range(skip_batches):
         next(train_iter) 
     #%% training loop
+    run = None
     if rank == 0:
         logging.info(f"Starting training with {world_size} processes.")
-        run_id = args.run_id if args.run_id else wandb.util.generate_id()
-        run = wandb.init(
-            project="neogpt",
-            config=config.__dict__,
-            name="fineweb-training",
-            id = run_id,
-            resume=True,
-            settings = wandb.Settings(init_timeout=120),
-        )
-        # alert that a run has started
-        run.alert(
-            title="Run started",
-            text=f"Run {run.name} with id {run.id} has started.",
-            level="INFO"
-        )
+        if args.logging:
+            run_id = args.run_id if args.run_id else wandb.util.generate_id()
+            run = wandb.init(
+                project="neogpt",
+                config=config.__dict__,
+                name="fineweb-training",
+                id = run_id,
+                resume=True,
+                settings = wandb.Settings(init_timeout=120),
+            )
+            # alert that a run has started
+            run.alert(
+                title="Run started",
+                text=f"Run {run.name} with id {run.id} has started.",
+                level="INFO"
+            )
     for iter in range(start_iter, max_iters):
         # sample a batch of data
         t0 = time.time()
@@ -147,8 +145,8 @@ def train(rank,world_size):
                 for _ in range(val_loss_steps):
                     xb, yb = next(val_iter)
                     xb, yb = xb.to(device), yb.to(device)
-                    with torch.autocast(device_type=device.type, dtype=torch.bfloat16): 
-                        _, loss = model(xb, yb)
+                    # with torch.autocast(device_type=device.type, dtype=torch.bfloat16): 
+                    _, loss = model(xb, yb)
                     loss = loss / val_loss_steps  # average loss over steps
                     val_loss_accum += loss.detach()
                 val_loss_tensor = torch.tensor(val_loss_accum, device=device)  # create a tensor for loss accumulation
@@ -163,6 +161,8 @@ def train(rank,world_size):
                         text="Validation loss at step {}: {:.4f}".format(iter, val_loss_accum),
                         level="INFO"
                         )
+                        with open(os.path.join(logs_dir, "val_loss.txt"), "a") as f:
+                            f.write(f"Step {iter}: {val_loss_accum:.4f}\n")
 
         model.train()  # switch back to training mode
         optimizer.zero_grad(set_to_none=True)
@@ -171,8 +171,8 @@ def train(rank,world_size):
             xb, yb = next(train_iter)
             xb, yb = xb.to(device), yb.to(device)
             model.require_backward_sync = (micro_step == grad_accum_steps - 1)  # only sync gradients on the last micro step
-            with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
-                logits, loss = model(xb, yb)
+            # with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+            logits, loss = model(xb, yb)
             loss = loss / grad_accum_steps
             loss_accum += loss.item()
             loss.backward()  # accumulate gradients
@@ -189,14 +189,24 @@ def train(rank,world_size):
         t1 = time.time()
         dt = t1 - t0
         tokens_processed = B * T * grad_accum_steps * world_size  # total tokens processed in this step
-        if rank == 0 and run is not None:
-            run.log({"train/loss": loss_accum, "train/lr": lr, "train/norm": norm, "tokens/sec": tokens_processed / dt}, step=iter)
-            logging.info(f"Training loss at step {iter}: {loss_accum:.4f}")
-            if (iter > 0 and iter % eval_iters == 0) or last_step:
-                save_state(iter, raw_model, optimizer, model_dir= model_dir)
-                model_artifact = wandb.Artifact(f"neogpt",type="model")
-                model_artifact.add_file(os.path.join(model_dir, "model.pth"))
-                run.log_artifact(model_artifact,aliases=["latest"])
+        if rank == 0:
+            if args.logging and run is not None:
+                run.log({"train/loss": loss_accum, "train/lr": lr, "train/norm": norm, "tokens/sec": tokens_processed / dt}, step=iter)
+                logging.info(f"Training loss at step {iter}: {loss_accum:.4f}")
+                with open(os.path.join(logs_dir, "train_loss.txt"), "a") as f:
+                    f.write(f"Step {iter}: {loss_accum:.4f}\n")
+                if (iter > 0 and iter % eval_iters == 0) or last_step:
+                    save_state(iter, raw_model, optimizer, model_dir= model_dir)
+                    model_artifact = wandb.Artifact(f"neogpt",type="model")
+                    model_artifact.add_file(os.path.join(model_dir, "model.pth"))
+                    # add training and validation loss files as well
+                    model_artifact.add_file(os.path.join(logs_dir, "train_loss.txt"))
+                    model_artifact.add_file(os.path.join(logs_dir, "val_loss.txt"))
+                    run.log_artifact(model_artifact,aliases=["latest"])
+            else:
+                logging.info(f"Training loss at step {iter}: {loss_accum:.4f}")
+                if (iter > 0 and iter % eval_iters == 0) or last_step:
+                    save_state(iter, raw_model, optimizer, model_dir= model_dir)
 
 
     dist.destroy_process_group()  # clean up any existing process group
