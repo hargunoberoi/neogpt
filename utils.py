@@ -89,10 +89,10 @@ def estimate_loss(model, iterator, num_iters=10, device='cpu'):
     return losses.mean()
 
 
-def generate_from_model(prompt, model, tokenizer, config, device):
+def generate_from_model(prompt, model, tokenizer,device, max_new_tokens=100):
     prompt_tokens = tokenizer.encode(prompt)
     prompt_tensor = torch.tensor(prompt_tokens, dtype=torch.long, device=device).unsqueeze(0)
-    output = model.generate(prompt_tensor, config.max_new_tokens)
+    output = model.generate(prompt_tensor, max_new_tokens)
     output_list = output[0].tolist()
     output_text = tokenizer.decode(output_list)
     return output_text

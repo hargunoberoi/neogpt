@@ -93,7 +93,7 @@ def train(rank,world_size):
     # get the model
     model = GPT(config)
     model = model.to(rank)
-    # model = torch.compile(model)
+    # model = torch.compile(model) 
     model = DDP(model, device_ids=[rank]) # ddp wrapper for distributed training
     raw_model = model.module  # get the raw model for saving state
     optimizer = raw_model.configure_optimizers(weight_decay=1e-1, learning_rate=max_lr, device=device)
@@ -137,7 +137,7 @@ def train(rank,world_size):
                 if rank == 0:
                     logging.info(f"Validation loss at step {iter}: {val_loss_accum:.4f}")
                     sample_prompt = "Hargun Singh Oberoi is a"
-                    output_text = generate_from_model(sample_prompt, raw_model, enc, config, device)
+                    output_text = generate_from_model(sample_prompt, raw_model, enc, device)
                     logging.info(f"Sample output: {output_text}")
                     if run is not None:
                         run.log({"val/loss": val_loss_accum}, step=iter)
