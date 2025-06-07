@@ -17,12 +17,12 @@ print(f"Prompt: {prompt}")
 config = GPTConfig(vocab_size=50304)# Use the improved vocab size)
 enc = tiktoken.get_encoding("gpt2")  # Use GPT-2 encoding for tokenization
 # 1. Create a model from scratch and generate
-print("\n[From Scratch] Generating with randomly initialized model...")
+print("\n[From Scratch] Generating with *homemade* model...")
 
 scratch_model = GPT(config).to(device)
 scratch_model.eval()
 # load model weights from models/model.pth
-if os.path.exists("models/model.pth"):
+if os.path.exists("models/model_15000.pt"):
     model_file = torch.load("models/model.pth", map_location=device,weights_only=True)
     try:
         scratch_model.load_state_dict(model_file['model_state_dict'])

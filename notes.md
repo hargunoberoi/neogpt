@@ -505,3 +505,21 @@ I also suspect lot of issues at the code level so I am going to attempt to run a
 I also need to delete the old model weights because it is consuming too much space.
 
 I don't know where all the wandb code is because I remember being able to delete through wandb data quite easily (runs and artififacts) but for the next experiment, I don't think I'd need any of it.
+
+[2025-06-07 14:34:40]
+
+I found the old wandb code. 
+
+I ran andrej script as well, it is twice as fast.
+
+Issue is with my code. What could be the issue(s)?
+
+- dataloader ✅
+- model?
+- ddp?
+
+Let's start first with dataloader, because that is the most obvious suspect.
+
+Then we proceed from there.
+
+Now just using dataloaderlite.
