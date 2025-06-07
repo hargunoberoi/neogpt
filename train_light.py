@@ -121,8 +121,8 @@ def train(rank,world_size):
                 for _ in range(val_loss_steps):
                     xb, yb = val_loader.next_batch()  # get next batch from validation loader
                     xb, yb = xb.to(device), yb.to(device)
-                    # with torch.autocast(device_type=device.type, dtype=torch.bfloat16): 
-                    _, loss = model(xb, yb)
+                    with torch.autocast(device_type=device.type, dtype=torch.bfloat16): 
+                        _, loss = model(xb, yb)
                     loss = loss / val_loss_steps  # average loss over steps
                     val_loss_accum += loss.item()
                 val_loss_tensor = torch.tensor(val_loss_accum, device=device)  # create a tensor for loss accumulation
@@ -147,8 +147,8 @@ def train(rank,world_size):
             xb, yb = train_loader.next_batch()  # get next batch from training loader
             xb, yb = xb.to(device), yb.to(device)
             model.require_backward_sync = (micro_step == grad_accum_steps - 1)  # only sync gradients on the last micro step
-            # with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
-            logits, loss = model(xb, yb)
+            with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+                logits, loss = model(xb, yb)
             loss = loss / grad_accum_steps
             loss_accum += loss.item()
             loss.backward()  # accumulate gradients
