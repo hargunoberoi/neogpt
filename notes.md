@@ -496,3 +496,12 @@ I need the init.sh script to close the instance once it starts.
 
 Restart is not working so well, so I don't know what to do.
 
+[2025-06-07 07:32:02]
+
+Alright. It's morning. The script did not run very well. The model "learns" something but it stil isn't making coherent sentences. 
+
+I also suspect lot of issues at the code level so I am going to attempt to run andrej's code as is as the gold standard for performance.
+
+I also need to delete the old model weights because it is consuming too much space.
+
+I don't know where all the wandb code is because I remember being able to delete through wandb data quite easily (runs and artififacts) but for the next experiment, I don't think I'd need any of it.

@@ -21,7 +21,13 @@ if [ ! -d "edu_fineweb10b" ]; then
     python download_dataset.py
 
     if [ -f "fineweb.tar.gz" ]; then
-        tar -xzf fineweb.tar.gz
+        # tar -xzf fineweb.tar.gz
+        if python extract_dataset.py >& /dev/null; then
+            echo "Extraction succeeded."
+        else
+            echo "Extraction failed! Please check extract_dataset.py" >&2
+            exit 1
+        fi
         if [ -d "edu_fineweb10b" ]; then
             rm fineweb.tar.gz
         else
