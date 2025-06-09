@@ -191,6 +191,7 @@ def train(rank,world_size):
         tokens_processed = B * T * grad_accum_steps * world_size  # total tokens processed in this step
         if rank == 0:
             if args.logging and run is not None:
+                print({"train/loss": loss_accum, "train/lr": lr, "train/norm": norm, "tokens/sec": tokens_processed / dt, "step": iter})
                 run.log({"train/loss": loss_accum, "train/lr": lr, "train/norm": norm, "tokens/sec": tokens_processed / dt}, step=iter)
                 logging.info(f"Training loss at step {iter}: {loss_accum:.4f}")
                 with open(os.path.join(logs_dir, "train_loss.txt"), "a") as f:
