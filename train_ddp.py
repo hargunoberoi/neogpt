@@ -206,6 +206,7 @@ def train(rank,world_size):
                     run.log_artifact(model_artifact,aliases=["latest"])
             else:
                 logging.info(f"Training loss at step {iter}: {loss_accum:.4f}")
+                print({"train/loss": loss_accum, "train/lr": lr, "train/norm": norm, "tokens/sec": tokens_processed / dt, "step": iter})
                 if (iter > 0 and iter % eval_iters == 0) or last_step:
                     save_state(iter, raw_model, optimizer, model_dir= model_dir)
 
