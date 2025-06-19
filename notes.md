@@ -505,3 +505,31 @@ I also suspect lot of issues at the code level so I am going to attempt to run a
 I also need to delete the old model weights because it is consuming too much space.
 
 I don't know where all the wandb code is because I remember being able to delete through wandb data quite easily (runs and artififacts) but for the next experiment, I don't think I'd need any of it.
+
+[2025-06-19 13:52:56]
+
+One new thing that I did but did not put down my thoughts are as follows: 
+
+I tried the Andrej code and it worked (obviously)
+
+But contrary to my belief, the issue was not with how I was loading the data. (I thought that I didn't get enough speed because DataLoaderLite was much faster), but in reality, all the missing speed was because of not using the right precision for the model weights.
+
+One thing still remains. Am I confusing the model by give each gpu a different shard of data? 
+
+I have super speed now. I need to test this out. But before that: 
+
+- Remove wandb model weights tracking
+- Figure out the logging library for good
+- Test out with new code
+
+I think I can do this. Obviously the end goal is that I want my own version of gpt2 that works, and then I can experiment with it to become the King of Punjab (or whatever)
+
+I think I can do this.
+
+[2025-06-19 15:21:20]
+
+I've decided against logging too. It's something i can master later.
+
+For now, let's remove the wandb weight saving and focus on running this and seeing if things are working or not.
+
+The other test would be to do it with dataloaderlite and test it as well.
