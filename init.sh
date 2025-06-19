@@ -21,13 +21,8 @@ if [ ! -d "edu_fineweb10b" ]; then
     python download_dataset.py
 
     if [ -f "fineweb.tar.gz" ]; then
-        # tar -xzf fineweb.tar.gz
-        if python extract_dataset.py >& /dev/null; then
-            echo "Extraction succeeded."
-        else
-            echo "Extraction failed! Please check extract_dataset.py" >&2
-            exit 1
-        fi
+        tar -xzf fineweb.tar.gz
+        
         if [ -d "edu_fineweb10b" ]; then
             rm fineweb.tar.gz
         else
@@ -40,21 +35,5 @@ if [ ! -d "edu_fineweb10b" ]; then
     fi
 else
     echo "Data folder edu_fineweb10b already exists. Skipping download."
-fi
-
-# download the model using download_models.py 
-# checking if the model directory exists
-if [ ! -d "models" ]; then
-    echo "Downloading model..."
-    if python download_models.py 2>/dev/null; then
-        echo "Download succeeded."
-    else
-        echo "Download failed! Start training from scratch" >&2
-        # clean up partial directory if it was created by download_models.py
-        rm -rf models
-        exit 1
-    fi
-else
-    echo "Model directory already exists. Skipping download."
 fi
 echo "All tasks completed successfully!"
